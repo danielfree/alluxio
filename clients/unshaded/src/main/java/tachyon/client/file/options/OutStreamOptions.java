@@ -27,6 +27,7 @@ import tachyon.conf.TachyonConf;
 public final class OutStreamOptions {
   public static class Builder {
     private long mBlockSizeBytes;
+    private boolean mCompression;
     private String mHostname;
     private TachyonStorageType mTachyonStorageType;
     private long mTTL;
@@ -39,6 +40,7 @@ public final class OutStreamOptions {
      */
     public Builder(TachyonConf conf) {
       mBlockSizeBytes = conf.getBytes(Constants.USER_BLOCK_SIZE_BYTES_DEFAULT);
+      mCompression = conf.getBoolean(Constants.USER_FILE_COMPRESSION_ENABLED);
       mHostname = null;
       WriteType defaultWriteType =
           conf.getEnum(Constants.USER_FILE_WRITE_TYPE_DEFAULT, WriteType.class);
@@ -53,6 +55,11 @@ public final class OutStreamOptions {
      */
     public Builder setBlockSizeBytes(long blockSizeBytes) {
       mBlockSizeBytes = blockSizeBytes;
+      return this;
+    }
+
+    public Builder setCompression(boolean compression) {
+      mCompression = compression;
       return this;
     }
 
@@ -120,6 +127,7 @@ public final class OutStreamOptions {
   }
 
   private final long mBlockSizeBytes;
+  private boolean mCompression;
   private final String mHostname;
   private final TachyonStorageType mTachyonStorageType;
   private final UnderStorageType mUnderStorageType;
@@ -134,6 +142,7 @@ public final class OutStreamOptions {
 
   private OutStreamOptions(OutStreamOptions.Builder builder) {
     mBlockSizeBytes = builder.mBlockSizeBytes;
+    mCompression = builder.mCompression;
     mHostname = builder.mHostname;
     mTachyonStorageType = builder.mTachyonStorageType;
     mTTL = builder.mTTL;
@@ -145,6 +154,10 @@ public final class OutStreamOptions {
    */
   public long getBlockSizeBytes() {
     return mBlockSizeBytes;
+  }
+
+  public boolean getCompression() {
+    return mCompression;
   }
 
   /**

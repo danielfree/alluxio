@@ -284,6 +284,8 @@ public final class Constants {
       "tachyon.user.block.master.client.threads";
   public static final String USER_FILE_MASTER_CLIENT_THREADS =
       "tachyon.user.file.master.client.threads";
+  public static final String USER_FILE_COMPRESSION_ENABLED =
+      "tachyon.user.file.compression.enabled";
   public static final String USER_LINEAGE_ENABLED = "tachyon.user.lineage.enabled";
 
   public static final String USER_FILE_WAITCOMPLETED_POLL_MS =

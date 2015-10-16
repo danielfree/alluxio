@@ -25,6 +25,7 @@ import tachyon.conf.TachyonConf;
 @PublicApi
 public final class InStreamOptions {
   public static class Builder {
+    private boolean mCompression;
     private TachyonStorageType mTachyonStorageType;
 
     /**
@@ -33,9 +34,15 @@ public final class InStreamOptions {
      * @param conf a Tachyon configuration
      */
     public Builder(TachyonConf conf) {
+      mCompression = conf.getBoolean(Constants.USER_FILE_COMPRESSION_ENABLED);
       ReadType defaultReadType =
           conf.getEnum(Constants.USER_FILE_READ_TYPE_DEFAULT, ReadType.class);
       mTachyonStorageType = defaultReadType.getTachyonStorageType();
+    }
+
+    public Builder setCompression(boolean compression) {
+      mCompression = compression;
+      return this;
     }
 
     /**
@@ -69,6 +76,7 @@ public final class InStreamOptions {
     }
   }
 
+  private boolean mCompression;
   private final TachyonStorageType mTachyonStorageType;
 
   /**
@@ -79,7 +87,12 @@ public final class InStreamOptions {
   }
 
   private InStreamOptions(InStreamOptions.Builder builder) {
+    mCompression = builder.mCompression;
     mTachyonStorageType = builder.mTachyonStorageType;
+  }
+
+  public boolean getCompression() {
+    return mCompression;
   }
 
   /**

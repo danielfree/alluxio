@@ -15,6 +15,7 @@
 
 package tachyon.client.file;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
@@ -40,6 +41,8 @@ import tachyon.thrift.FileInfo;
 import tachyon.underfs.UnderFileSystem;
 import tachyon.util.io.PathUtils;
 import tachyon.worker.WorkerClient;
+
+import net.jpountz.lz4.LZ4BlockOutputStream;
 
 /**
  * Provides a streaming API to write a file. This class wraps the BlockOutStreams for each of the
@@ -75,6 +78,10 @@ public class FileOutStream extends OutputStream implements Cancelable {
 
   protected final long mFileId;
 
+  private boolean mCompression = false;
+  private ByteArrayOutputStream mCompressByteArrayOutStream;
+  private LZ4BlockOutputStream mLz4CompressOutStream;
+
   /**
    * Creates a new file output stream.
    *
@@ -105,6 +112,12 @@ public class FileOutStream extends OutputStream implements Cancelable {
     mCanceled = false;
     mHostname = options.getHostname();
     mShouldCacheCurrentBlock = mTachyonStorageType.isStore();
+    if (options.getCompression()) {
+      mCompression = true;
+      mCompressByteArrayOutStream = new ByteArrayOutputStream();
+      mLz4CompressOutStream =
+          new LZ4BlockOutputStream(mCompressByteArrayOutStream, 32 * 1024 * 1024);
+    }
   }
 
   @Override
@@ -118,6 +131,14 @@ public class FileOutStream extends OutputStream implements Cancelable {
     if (mClosed) {
       return;
     }
+    // for lz4 compression, there might be remaining buffered bytes we need to fetch
+    if (mCompression) {
+      mLz4CompressOutStream.finish();
+      byte[] remainingBytes = mCompressByteArrayOutStream.toByteArray();
+      directWrite(remainingBytes,0,remainingBytes.length);
+      mLz4CompressOutStream.close();
+    }
+
     if (mCurrentBlockOutStream != null) {
       mPreviousBlockOutStreams.add(mCurrentBlockOutStream);
     }
@@ -189,20 +210,28 @@ public class FileOutStream extends OutputStream implements Cancelable {
 
   @Override
   public void write(int b) throws IOException {
-    if (mShouldCacheCurrentBlock) {
-      try {
-        if (mCurrentBlockOutStream == null || mCurrentBlockOutStream.remaining() == 0) {
-          getNextBlock();
+    if (mCompression) {
+      mLz4CompressOutStream.write(b);
+      mLz4CompressOutStream.flush();
+      byte[] compressedBytes = mCompressByteArrayOutStream.toByteArray();
+      directWrite(compressedBytes, 0, compressedBytes.length);
+      mCompressByteArrayOutStream.reset();
+    } else {
+      if (mShouldCacheCurrentBlock) {
+        try {
+          if (mCurrentBlockOutStream == null || mCurrentBlockOutStream.remaining() == 0) {
+            getNextBlock();
+          }
+          mCurrentBlockOutStream.write(b);
+        } catch (IOException ioe) {
+          handleCacheWriteException(ioe);
         }
-        mCurrentBlockOutStream.write(b);
-      } catch (IOException ioe) {
-        handleCacheWriteException(ioe);
       }
-    }
 
-    if (mUnderStorageType.isSyncPersist()) {
-      mUnderStorageOutputStream.write(b);
-      ClientContext.getClientMetrics().incBytesWrittenUfs(1);
+      if (mUnderStorageType.isSyncPersist()) {
+        mUnderStorageOutputStream.write(b);
+        ClientContext.getClientMetrics().incBytesWrittenUfs(1);
+      }
     }
   }
 
@@ -216,7 +245,18 @@ public class FileOutStream extends OutputStream implements Cancelable {
     Preconditions.checkArgument(b != null, ERR_BUFFER_NULL);
     Preconditions.checkArgument(
         off >= 0 && len >= 0 && len + off <= b.length, ERR_BUFFER_STATE, b.length, off, len);
+    if (mCompression) {
+      mLz4CompressOutStream.write(b, off, len);
+      mLz4CompressOutStream.flush();
+      byte[] compressedBytes = mCompressByteArrayOutStream.toByteArray();
+      directWrite(compressedBytes, 0, compressedBytes.length);
+      mCompressByteArrayOutStream.reset();
+    } else {
+      directWrite(b, off, len);
+    }
+  }
 
+  private void directWrite(byte[] b, int off, int len) throws IOException {
     if (mShouldCacheCurrentBlock) {
       try {
         int tLen = len;

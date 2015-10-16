@@ -15,6 +15,7 @@
 
 package tachyon.client.file;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -36,6 +37,8 @@ import tachyon.client.file.options.InStreamOptions;
 import tachyon.master.block.BlockId;
 import tachyon.thrift.FileInfo;
 import tachyon.util.network.NetworkAddressUtils;
+
+import net.jpountz.lz4.LZ4BlockInputStream;
 
 /**
  * A streaming API to read a file. This API represents a file as a stream of bytes and provides a
@@ -80,6 +83,9 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
   /** Current BlockOutStream writing the data into Tachyon, this may be null */
   private BufferedBlockOutStream mCurrentCacheStream;
 
+  private boolean mCompression = false;
+  private LZ4BlockInputStream mLz4CompressInStream;
+
   /**
    * Creates a new file input stream.
    *
@@ -94,6 +100,9 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
     mTachyonStorageType = options.getTachyonStorageType();
     mShouldCacheCurrentBlock = mTachyonStorageType.isStore();
     mClosed = false;
+    if (options.getCompression()) {
+      mCompression = true;
+    }
   }
 
   @Override
@@ -115,7 +124,12 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
     }
 
     checkAndAdvanceBlockInStream();
-    int data = mCurrentBlockInStream.read();
+    int data;
+    if (mCompression) {
+      data = mLz4CompressInStream.read();
+    } else {
+      data = mCurrentBlockInStream.read();
+    }
     mPos ++;
     if (mShouldCacheCurrentBlock) {
       try {
@@ -150,10 +164,15 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
 
     while (bytesLeftToRead > 0 && mPos < mFileLength) {
       checkAndAdvanceBlockInStream();
-
-      int bytesToRead = (int) Math.min(bytesLeftToRead, mCurrentBlockInStream.remaining());
-
-      int bytesRead = mCurrentBlockInStream.read(b, currentOffset, bytesToRead);
+      int bytesToRead;
+      int bytesRead;
+      if (mCompression) {
+        bytesToRead = bytesLeftToRead;
+        bytesRead = mLz4CompressInStream.read(b, currentOffset, bytesToRead);
+      } else {
+        bytesToRead = (int) Math.min(bytesLeftToRead, mCurrentBlockInStream.remaining());
+        bytesRead = mCurrentBlockInStream.read(b, currentOffset, bytesToRead);
+      }
       if (bytesRead > 0 && mShouldCacheCurrentBlock) {
         try {
           mCurrentCacheStream.write(b, currentOffset, bytesRead);
@@ -325,6 +344,9 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
       mCurrentBlockInStream = mContext.getTachyonBlockStore().getInStream(blockId);
       mShouldCacheCurrentBlock =
           !(mCurrentBlockInStream instanceof LocalBlockInStream) && mTachyonStorageType.isStore();
+      if (mCompression) {
+        mLz4CompressInStream = new LZ4BlockInputStream(mCurrentBlockInStream);
+      }
     } catch (IOException ioe) {
       LOG.debug("Failed to get BlockInStream for " + blockId + ", using ufs instead. Exception:"
           + ioe.getMessage());
@@ -337,6 +359,9 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
       mCurrentBlockInStream =
           new UnderStoreFileInStream(blockStart, mBlockSize, mFileInfo.getUfsPath());
       mShouldCacheCurrentBlock = mTachyonStorageType.isStore();
+      if (mCompression) {
+        mLz4CompressInStream = new LZ4BlockInputStream(mCurrentBlockInStream);
+      }
     }
   }
 }
