@@ -39,6 +39,7 @@ import tachyon.thrift.FileInfo;
 import tachyon.util.network.NetworkAddressUtils;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
+import sun.rmi.runtime.Log;
 
 /**
  * A streaming API to read a file. This API represents a file as a stream of bytes and provides a
@@ -84,7 +85,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
   private BufferedBlockOutStream mCurrentCacheStream;
 
   private boolean mCompression = false;
-  private LZ4BlockInputStream mLz4CompressInStream;
+  private BufferedLZ4FileInStream mBufferedLZ4FileInStream;
 
   /**
    * Creates a new file input stream.
@@ -126,11 +127,12 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
     checkAndAdvanceBlockInStream();
     int data;
     if (mCompression) {
-      data = mLz4CompressInStream.read();
+      data = mBufferedLZ4FileInStream.read();
+      mPos = mBufferedLZ4FileInStream.getPos();
     } else {
       data = mCurrentBlockInStream.read();
+      mPos ++;
     }
-    mPos ++;
     if (mShouldCacheCurrentBlock) {
       try {
         mCurrentCacheStream.write(data);
@@ -161,14 +163,16 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
 
     int currentOffset = off;
     int bytesLeftToRead = len;
-
+    if (mCurrentBlockInStream != null) {
+      LOG.info("currentBlockInStream remaining: " + mCurrentBlockInStream.remaining());
+    }
     while (bytesLeftToRead > 0 && mPos < mFileLength) {
       checkAndAdvanceBlockInStream();
       int bytesToRead;
       int bytesRead;
       if (mCompression) {
         bytesToRead = bytesLeftToRead;
-        bytesRead = mLz4CompressInStream.read(b, currentOffset, bytesToRead);
+        bytesRead = mBufferedLZ4FileInStream.read(b, currentOffset, bytesToRead);
       } else {
         bytesToRead = (int) Math.min(bytesLeftToRead, mCurrentBlockInStream.remaining());
         bytesRead = mCurrentBlockInStream.read(b, currentOffset, bytesToRead);
@@ -183,15 +187,22 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
         }
       }
       if (bytesRead == -1) {
+        // BufferedLZ4FileInStream returns -1 when file finished
+        if (mCompression) {
+          mPos += BufferedLZ4FileInStream.HEADER_LENGTH;
+        }
         // mCurrentBlockInStream has reached its block boundary
         continue;
       }
-
-      mPos += bytesRead;
+      if (mCompression) {
+        mPos = mBufferedLZ4FileInStream.getPos();
+        LOG.info("bytesRead is: " + bytesRead + " mPos is : " + mPos);
+      } else {
+        mPos += bytesRead;
+      }
       bytesLeftToRead -= bytesRead;
       currentOffset += bytesRead;
     }
-
     return len - bytesLeftToRead;
   }
 
@@ -202,6 +213,9 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
 
   @Override
   public void seek(long pos) throws IOException {
+    if (mCompression) {
+      throw new IOException("Compression file does not support seek");
+    }
     if (mPos == pos) {
       return;
     }
@@ -218,7 +232,9 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
     if (n <= 0) {
       return 0;
     }
-
+    if (mCompression) {
+      throw new IOException("Compression file does not support skip");
+    }
     long toSkip = Math.min(n, mFileLength - mPos);
     long newPos = mPos + toSkip;
     long toSkipInBlock = ((newPos / mBlockSize) > mPos / mBlockSize) ? newPos % mBlockSize : toSkip;
@@ -345,7 +361,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
       mShouldCacheCurrentBlock =
           !(mCurrentBlockInStream instanceof LocalBlockInStream) && mTachyonStorageType.isStore();
       if (mCompression) {
-        mLz4CompressInStream = new LZ4BlockInputStream(mCurrentBlockInStream);
+        mBufferedLZ4FileInStream = new BufferedLZ4FileInStream(mCurrentBlockInStream);
       }
     } catch (IOException ioe) {
       LOG.debug("Failed to get BlockInStream for " + blockId + ", using ufs instead. Exception:"
@@ -360,7 +376,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
           new UnderStoreFileInStream(blockStart, mBlockSize, mFileInfo.getUfsPath());
       mShouldCacheCurrentBlock = mTachyonStorageType.isStore();
       if (mCompression) {
-        mLz4CompressInStream = new LZ4BlockInputStream(mCurrentBlockInStream);
+        mBufferedLZ4FileInStream = new BufferedLZ4FileInStream(mCurrentBlockInStream);
       }
     }
   }

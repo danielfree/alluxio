@@ -111,11 +111,12 @@ public final class WebInterfaceDownloadServlet extends HttpServlet {
     long len = tFile.getLength();
     String fileName = path.getName();
     response.setContentType("application/octet-stream");
-    if (len <= Integer.MAX_VALUE) {
-      response.setContentLength((int) len);
-    } else {
-      response.addHeader("Content-Length", Long.toString(len));
-    }
+    //TODO(daniel): set file original len in FileInfo for compress file
+//    if (len <= Integer.MAX_VALUE) {
+//      response.setContentLength((int) len);
+//    } else {
+//      response.addHeader("Content-Length", Long.toString(len));
+//    }
     response.addHeader("Content-Disposition", "attachment;filename=" + fileName);
 
     FileInStream is = null;
