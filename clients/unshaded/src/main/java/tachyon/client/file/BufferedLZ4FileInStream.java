@@ -15,7 +15,6 @@
 
 package tachyon.client.file;
 
-import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,10 +61,13 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
   private final Checksum mChecksum;
   private byte[] mBuffer;
   private byte[] mCompressedBuffer;
+  private byte[] mTempHeaderBuffer;
+  private byte[] mTempCompressBuffer;
   private int mOriginalLen;
   private int mOffset;
   private boolean mFinished;
-  private int mPos;
+  private boolean mNeedNewBlock;
+  private long mPos;
 
   /**
    * Create a new {@link InputStream}.
@@ -82,8 +84,12 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     mChecksum = checksum;
     mBuffer = new byte[0];
     mCompressedBuffer = new byte[HEADER_LENGTH];
-    mOffset = mOriginalLen = mPos = 0;
+    mOffset = mOriginalLen = 0;
     mFinished = false;
+    mNeedNewBlock = false;
+    mTempHeaderBuffer = new byte[0];
+    mTempCompressBuffer = new byte[0];
+    mPos = 0;
   }
 
   /**
@@ -107,6 +113,16 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     this(in, LZ4Factory.fastestInstance().fastDecompressor());
   }
 
+  public BufferedLZ4FileInStream reInitialize(InputStream inputStream) {
+    in = inputStream;
+    mBuffer = new byte[0];
+    mCompressedBuffer = new byte[HEADER_LENGTH];
+    mOffset = mOriginalLen = 0;
+    mFinished = false;
+    mNeedNewBlock = false;
+    return this;
+  }
+
   @Override
   public int available() throws IOException {
     return mOriginalLen - mOffset;
@@ -119,6 +135,9 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     }
     if (mOffset == mOriginalLen) {
       refill();
+    }
+    if (mNeedNewBlock) {
+      return -2;
     }
     if (mFinished) {
       return -1;
@@ -135,8 +154,10 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     if (mOffset == mOriginalLen) {
       refill();
     }
+    if (mNeedNewBlock) {
+      return -1;
+    }
     if (mFinished) {
-      LOG.info("file finished");
       return -1;
     }
     len = Math.min(len, mOriginalLen - mOffset);
@@ -156,11 +177,16 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
   }
 
   private void refill() throws IOException {
-    readFully(mCompressedBuffer, HEADER_LENGTH);
-    mPos += HEADER_LENGTH;
+    if (!readFully(mCompressedBuffer, HEADER_LENGTH)) {
+      mNeedNewBlock = true;
+      return;
+    }
+    mTempHeaderBuffer = new byte[HEADER_LENGTH];
+    System.arraycopy(mCompressedBuffer,0,mTempHeaderBuffer,0,HEADER_LENGTH);
     for (int i = 0; i < MAGIC_LENGTH; ++i) {
       if (mCompressedBuffer[i] != MAGIC[i]) {
-        throw new IOException("Stream is corrupted");
+        throw new IOException(
+            "Stream is corrupted at " + i + " : " + mCompressedBuffer[i] + " - " + MAGIC[i]);
       }
     }
     final int token = mCompressedBuffer[MAGIC_LENGTH] & 0xFF;
@@ -168,7 +194,7 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     final int compressionLevel = COMPRESSION_LEVEL_BASE + (token & 0x0F);
     if (compressionMethod != COMPRESSION_METHOD_RAW
         && compressionMethod != COMPRESSION_METHOD_LZ4) {
-      throw new IOException("Stream is corrupted");
+      throw new IOException("Stream is corrupted: invalid compressionMethod");
     }
     final int compressedLen = SafeUtils.readIntLE(mCompressedBuffer, MAGIC_LENGTH + 1);
     mOriginalLen = SafeUtils.readIntLE(mCompressedBuffer, MAGIC_LENGTH + 5);
@@ -177,11 +203,11 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     if (mOriginalLen > 1 << compressionLevel || mOriginalLen < 0 || compressedLen < 0
         || (mOriginalLen == 0 && compressedLen != 0) || (mOriginalLen != 0 && compressedLen == 0)
         || (compressionMethod == COMPRESSION_METHOD_RAW && mOriginalLen != compressedLen)) {
-      throw new IOException("Stream is corrupted");
+      throw new IOException("Stream is corrupted: invalid length");
     }
     if (mOriginalLen == 0 && compressedLen == 0) {
       if (check != 0) {
-        throw new IOException("Stream is corrupted");
+        throw new IOException("Stream is corrupted: invalid checksum");
       }
       mFinished = true;
       return;
@@ -191,23 +217,29 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     }
     switch (compressionMethod) {
       case COMPRESSION_METHOD_RAW:
-        readFully(mBuffer, mOriginalLen);
-        mPos += mOriginalLen;
+        if (!readFully(mBuffer, mOriginalLen)) {
+          LOG.info("raw compression not read fully");
+          mNeedNewBlock = true;
+          return;
+        }
         break;
       case COMPRESSION_METHOD_LZ4:
         if (mCompressedBuffer.length < mOriginalLen) {
           mCompressedBuffer = new byte[Math.max(compressedLen, mCompressedBuffer.length * 3 / 2)];
         }
-        readFully(mCompressedBuffer, compressedLen);
-        mPos += compressedLen;
+        if (!readFully(mCompressedBuffer, compressedLen)) {
+          LOG.info("lz4 compression not read fully");
+          mNeedNewBlock = true;
+          return;
+        }
         try {
           final int compressedLen2 =
               mDecompressor.decompress(mCompressedBuffer, 0, mBuffer, 0, mOriginalLen);
           if (compressedLen != compressedLen2) {
-            throw new IOException("Stream is corrupted");
+            throw new IOException("Stream is corrupted: invalid decompression");
           }
         } catch (LZ4Exception e) {
-          throw new IOException("Stream is corrupted", e);
+          throw new IOException("Stream is corrupted: ", e);
         }
         break;
       default:
@@ -216,24 +248,58 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
     mChecksum.reset();
     mChecksum.update(mBuffer, 0, mOriginalLen);
     if ((int) mChecksum.getValue() != check) {
-      throw new IOException("Stream is corrupted");
+      throw new IOException("Stream is corrupted: invalid decompression checksum: "
+          + mChecksum.getValue() + " -- " + check);
     }
     mOffset = 0;
+    mTempHeaderBuffer = new byte[0];
   }
 
-  private void readFully(byte[] b, int len) throws IOException {
+  private boolean readFully(byte[] b, int len) throws IOException {
     int read = 0;
+    if (len == HEADER_LENGTH) {
+      if (mTempHeaderBuffer.length > 0) {
+        System.arraycopy(mTempHeaderBuffer, 0, b, 0, mTempHeaderBuffer.length);
+        read += mTempHeaderBuffer.length;
+        mTempHeaderBuffer = new byte[0];
+      }
+    } else {
+      if (mTempCompressBuffer.length > 0) {
+        if (mTempCompressBuffer.length > len) {
+          System.arraycopy(mTempCompressBuffer, 0, b, 0, len);
+          byte[] newTempBuffer = new byte[mTempCompressBuffer.length - len];
+          System.arraycopy(mTempCompressBuffer, len, newTempBuffer, 0,
+              mTempCompressBuffer.length - len);
+          mTempCompressBuffer = newTempBuffer;
+          return true;
+        } else {
+          System.arraycopy(mTempCompressBuffer, 0, b, 0, mTempCompressBuffer.length);
+          read += mTempCompressBuffer.length;
+          mTempCompressBuffer = new byte[0];
+        }
+      }
+    }
     while (read < len) {
       final int r = in.read(b, read, len - read);
       if (r < 0) {
-        throw new EOFException("Stream ended prematurely");
+        break;
       }
       read += r;
+      mPos += r;
     }
-    assert len == read;
+    if (len != read) {
+      if (len == HEADER_LENGTH) {
+        mTempHeaderBuffer = new byte[read];
+        System.arraycopy(b, 0, mTempHeaderBuffer, 0, read);
+      } else {
+        mTempCompressBuffer = new byte[read];
+        System.arraycopy(b, 0, mTempCompressBuffer, 0, read);
+      }
+    }
+    return len == read;
   }
 
-  public int getPos() {
+  public long getPos() {
     return mPos;
   }
 
