@@ -137,7 +137,7 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
       refill();
     }
     if (mNeedNewBlock) {
-      return -2;
+      return -1;
     }
     if (mFinished) {
       return -1;
