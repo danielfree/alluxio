@@ -542,7 +542,7 @@ public class Performance {
       sResultPrefix = "TachyonFilesWriteTest " + sResultPrefix;
       LOG.info(sResultPrefix);
       sTFS = TachyonFileSystem.TachyonFileSystemFactory.get();
-      createFiles();
+//      createFiles();
       TachyonTest(true);
     } else if (testCase == 2 || testCase == 9) {
       sResultPrefix = "TachyonFilesReadTest " + sResultPrefix;
