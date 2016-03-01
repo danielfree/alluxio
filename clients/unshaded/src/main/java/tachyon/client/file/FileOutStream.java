@@ -73,6 +73,7 @@ public class FileOutStream extends OutputStream implements Cancelable {
   protected boolean mClosed;
   private String mHostname;
   private boolean mShouldCacheCurrentBlock;
+  private long mWrittenBytes;
   protected BufferedBlockOutStream mCurrentBlockOutStream;
   protected List<BufferedBlockOutStream> mPreviousBlockOutStreams;
 
@@ -190,7 +191,7 @@ public class FileOutStream extends OutputStream implements Cancelable {
     if (canComplete) {
       FileSystemMasterClient masterClient = mContext.acquireMasterClient();
       try {
-        masterClient.completeFile(mFileId);
+        masterClient.completeFile(mFileId, mWrittenBytes);
       } catch (TachyonException e) {
         throw new IOException(e);
       } finally {
@@ -233,6 +234,7 @@ public class FileOutStream extends OutputStream implements Cancelable {
         ClientContext.getClientMetrics().incBytesWrittenUfs(1);
       }
     }
+    mWrittenBytes ++;
   }
 
   @Override
@@ -254,6 +256,7 @@ public class FileOutStream extends OutputStream implements Cancelable {
     } else {
       directWrite(b, off, len);
     }
+    mWrittenBytes += len;
   }
 
   private void directWrite(byte[] b, int off, int len) throws IOException {

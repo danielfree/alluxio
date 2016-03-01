@@ -28,12 +28,15 @@ public final class CompleteFileEntry implements JournalEntry {
   private final List<Long> mBlockIds;
   private final long mId;
   private final long mLength;
+  private final long mBlockLength;
   private final long mOpTimeMs;
 
-  public CompleteFileEntry(List<Long> blockIds, long id, long length, long opTimeMs) {
+  public CompleteFileEntry(List<Long> blockIds, long id, long length, long blockLength,
+      long opTimeMs) {
     mBlockIds = Preconditions.checkNotNull(blockIds);
     mId = id;
     mLength = length;
+    mBlockLength = blockLength;
     mOpTimeMs = opTimeMs;
   }
 
@@ -47,6 +50,10 @@ public final class CompleteFileEntry implements JournalEntry {
 
   public long getFileLength() {
     return mLength;
+  }
+
+  public long getBlockLength() {
+    return mBlockLength;
   }
 
   public long getOperationTimeMs() {
@@ -64,6 +71,7 @@ public final class CompleteFileEntry implements JournalEntry {
     parameters.put("blockIds", mBlockIds);
     parameters.put("id", mId);
     parameters.put("length", mLength);
+    parameters.put("blockLength", mBlockLength);
     parameters.put("operationTimeMs", mOpTimeMs);
     return parameters;
   }

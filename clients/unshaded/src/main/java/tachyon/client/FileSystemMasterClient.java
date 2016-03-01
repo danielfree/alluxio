@@ -92,8 +92,7 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized FileInfo getFileInfo(long fileId) throws IOException,
-      TachyonException {
+  public synchronized FileInfo getFileInfo(long fileId) throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -115,8 +114,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized List<FileInfo> getFileInfoList(long fileId) throws IOException,
-      TachyonException {
+  public synchronized List<FileInfo> getFileInfoList(long fileId)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -164,8 +163,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws TachyonException if a Tachyon error occurs
    */
   // TODO(calvin): Not sure if this is necessary.
-  public synchronized List<FileBlockInfo> getFileBlockInfoList(long fileId) throws IOException,
-      TachyonException {
+  public synchronized List<FileBlockInfo> getFileBlockInfoList(long fileId)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -230,8 +229,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized long create(String path, CreateOptions options) throws IOException,
-      TachyonException {
+  public synchronized long create(String path, CreateOptions options)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -254,12 +253,13 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized void completeFile(long fileId) throws IOException, TachyonException {
+  public synchronized void completeFile(long fileId, long writtenBytes)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
       try {
-        mClient.completeFile(fileId);
+        mClient.completeFile(fileId, writtenBytes);
         return;
       } catch (TachyonTException e) {
         throw new TachyonException(e);
@@ -280,8 +280,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized boolean deleteFile(long fileId, boolean recursive) throws IOException,
-      TachyonException {
+  public synchronized boolean deleteFile(long fileId, boolean recursive)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -306,8 +306,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized boolean renameFile(long fileId, String dstPath) throws IOException,
-      TachyonException {
+  public synchronized boolean renameFile(long fileId, String dstPath)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -331,8 +331,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized void setPinned(long fileId, boolean pinned) throws IOException,
-      TachyonException {
+  public synchronized void setPinned(long fileId, boolean pinned)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -358,8 +358,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized boolean mkdir(String path, MkdirOptions options) throws IOException,
-      TachyonException {
+  public synchronized boolean mkdir(String path, MkdirOptions options)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();
@@ -384,8 +384,8 @@ public final class FileSystemMasterClient extends MasterClientBase {
    * @throws IOException if an I/O error occurs
    * @throws TachyonException if a Tachyon error occurs
    */
-  public synchronized boolean free(long fileId, boolean recursive) throws IOException,
-      TachyonException {
+  public synchronized boolean free(long fileId, boolean recursive)
+      throws IOException, TachyonException {
     int retry = 0;
     while (!mClosed && (retry ++) <= RPC_MAX_NUM_RETRY) {
       connect();

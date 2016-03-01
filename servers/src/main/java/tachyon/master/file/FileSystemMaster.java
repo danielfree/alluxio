@@ -417,10 +417,11 @@ public final class FileSystemMaster extends MasterBase {
    * Marks a file as completed. After a file is complete, it cannot be written to. Called via RPC.
    *
    * @param fileId the file id to complete.
+   * @param writtenBytes total bytes written for the file
    * @throws FileDoesNotExistException
    * @throws BlockInfoException
    */
-  public void completeFile(long fileId)
+  public void completeFile(long fileId, long writtenBytes)
       throws BlockInfoException, FileDoesNotExistException, InvalidPathException {
     synchronized (mInodeTree) {
       long opTimeMs = System.currentTimeMillis();
@@ -438,38 +439,39 @@ public final class FileSystemMaster extends MasterBase {
       }
 
       // Verify that all the blocks (except the last one) is the same size as the file block size.
-      long fileLength = 0;
+      long blockLength = 0;
       long fileBlockSize = fileInode.getBlockSizeBytes();
       for (int i = 0; i < blockInfoList.size(); i ++) {
         BlockInfo blockInfo = blockInfoList.get(i);
-        fileLength += blockInfo.getLength();
+        blockLength += blockInfo.getLength();
         if (i < blockInfoList.size() - 1 && blockInfo.getLength() != fileBlockSize) {
           throw new BlockInfoException(
               "Block index " + i + " has a block size smaller than the file block size ("
                   + fileInode.getBlockSizeBytes() + ")");
         }
       }
-
-      completeFileInternal(fileInode.getBlockIds(), fileId, fileLength, false, opTimeMs);
-      writeJournalEntry(
-          new CompleteFileEntry(fileInode.getBlockIds(), fileId, fileLength, opTimeMs));
+      completeFileInternal(fileInode.getBlockIds(), fileId, writtenBytes, blockLength, false,
+          opTimeMs);
+      writeJournalEntry(new CompleteFileEntry(fileInode.getBlockIds(), fileId, writtenBytes,
+          blockLength, opTimeMs));
       flushJournal();
     }
   }
 
-  void completeFileInternal(List<Long> blockIds, long fileId, long fileLength, boolean replayed,
-      long opTimeMs) throws FileDoesNotExistException, InvalidPathException {
+  void completeFileInternal(List<Long> blockIds, long fileId, long fileLength, long blockLength,
+      boolean replayed, long opTimeMs) throws FileDoesNotExistException, InvalidPathException {
     // This function should only be called from within synchronized (mInodeTree) blocks.
     InodeFile inodeFile = (InodeFile) mInodeTree.getInodeById(fileId);
     inodeFile.setBlockIds(blockIds);
+    inodeFile.setBlockLength(blockLength);
     inodeFile.setCompleted(fileLength);
     inodeFile.setLastModificationTimeMs(opTimeMs);
   }
 
   private void completeFileFromEntry(CompleteFileEntry entry) throws InvalidPathException {
     try {
-      completeFileInternal(entry.getBlockIds(), entry.getFileId(), entry.getFileLength(), true,
-          entry.getOperationTimeMs());
+      completeFileInternal(entry.getBlockIds(), entry.getFileId(), entry.getFileLength(),
+          entry.getBlockLength(), true, entry.getOperationTimeMs());
     } catch (FileDoesNotExistException fdnee) {
       throw new RuntimeException(fdnee);
     }

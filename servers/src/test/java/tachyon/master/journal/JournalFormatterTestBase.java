@@ -120,7 +120,7 @@ public abstract class JournalFormatterTestBase {
           new PersistFileEntry(TEST_FILE_ID, TEST_LENGTH_BYTES, TEST_OP_TIME_MS))
       .put(JournalEntryType.COMPLETE_FILE,
           new CompleteFileEntry(Arrays.asList(1L, 2L, 3L), TEST_FILE_ID, TEST_LENGTH_BYTES,
-              TEST_OP_TIME_MS))
+              TEST_LENGTH_BYTES, TEST_OP_TIME_MS))
       .put(JournalEntryType.SET_PINNED, new SetPinnedEntry(TEST_FILE_ID, false, TEST_OP_TIME_MS))
       .put(JournalEntryType.DELETE_FILE, new DeleteFileEntry(TEST_FILE_ID, true, TEST_OP_TIME_MS))
       .put(JournalEntryType.RENAME, new RenameEntry(TEST_FILE_ID, TEST_FILE_NAME, TEST_OP_TIME_MS))

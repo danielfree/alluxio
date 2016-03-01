@@ -266,7 +266,7 @@ public class TachyonFS extends AbstractTachyonFS {
    */
   synchronized void completeFile(long fid) throws IOException {
     try {
-      mFSMasterClient.completeFile(fid);
+      mFSMasterClient.completeFile(fid, 0);
     } catch (TachyonException e) {
       throw new IOException(e);
     }

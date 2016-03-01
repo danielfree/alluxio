@@ -126,9 +126,9 @@ public final class FileSystemMasterServiceHandler implements FileSystemMasterSer
   }
 
   @Override
-  public void completeFile(long fileId) throws TachyonTException {
+  public void completeFile(long fileId, long writtenBytes) throws TachyonTException {
     try {
-      mFileSystemMaster.completeFile(fileId);
+      mFileSystemMaster.completeFile(fileId, writtenBytes);
     } catch (TachyonException e) {
       throw e.toTachyonTException();
     }

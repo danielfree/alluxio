@@ -66,6 +66,7 @@ struct FileInfo {
   15: i32 inMemoryPercentage
   16: i64 lastModificationTimeMs
   17: i64 ttl
+  18: i64 blockLength
 }
 
 // Information about raw tables.
@@ -172,7 +173,7 @@ service BlockMasterService {
 }
 
 service FileSystemMasterService {
-  void completeFile(1: i64 fileId) throws (1: TachyonTException e)
+  void completeFile(1: i64 fileId, 2: i64 writtenBytes) throws (1: TachyonTException e)
 
   bool mkdir(1: string path, 2: MkdirTOptions options)
     throws (1: TachyonTException e, 2: ThriftIOException ioe)

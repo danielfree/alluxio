@@ -171,7 +171,7 @@ public final class FileSystemMasterTest {
     // add SSD block
     blockId = mFileSystemMaster.getNewBlockIdForFile(fileId);
     mBlockMaster.commitBlock(mWorkerId, Constants.KB, 2, blockId, Constants.KB);
-    mFileSystemMaster.completeFile(fileId);
+    mFileSystemMaster.completeFile(fileId, Constants.KB);
 
     createFileWithSingleBlock(ROOT_FILE_URI);
     Assert.assertEquals(Lists.newArrayList(ROOT_FILE_URI), mFileSystemMaster.getInMemoryFiles());
@@ -246,7 +246,7 @@ public final class FileSystemMasterTest {
     long fileId = mFileSystemMaster.create(uri, sNestedFileOptions);
     long blockId = mFileSystemMaster.getNewBlockIdForFile(fileId);
     mBlockMaster.commitBlock(mWorkerId, Constants.KB, 1, blockId, Constants.KB);
-    mFileSystemMaster.completeFile(fileId);
+    mFileSystemMaster.completeFile(fileId, Constants.KB);
     return blockId;
   }
 }

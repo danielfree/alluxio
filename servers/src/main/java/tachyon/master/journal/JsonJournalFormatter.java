@@ -321,6 +321,7 @@ public final class JsonJournalFormatter implements JournalFormatter {
                 }),
                 entry.getLong("id"),
                 entry.getLong("length"),
+                entry.getLong("blockLength"),
                 entry.getLong("operationTimeMs"));
           }
           case SET_PINNED: {

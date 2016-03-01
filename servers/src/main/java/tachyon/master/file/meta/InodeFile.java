@@ -36,6 +36,7 @@ public final class InodeFile extends Inode {
   public static class Builder extends Inode.Builder<InodeFile.Builder> {
     private long mBlockContainerId;
     private long mBlockSizeBytes;
+    private long mBlockLength;
     private long mTTL;
 
     public Builder() {
@@ -51,6 +52,11 @@ public final class InodeFile extends Inode {
 
     public Builder setBlockSizeBytes(long blockSizeBytes) {
       mBlockSizeBytes = blockSizeBytes;
+      return this;
+    }
+
+    public Builder setBlockLength(long blockLength) {
+      mBlockLength = blockLength;
       return this;
     }
 
@@ -84,6 +90,7 @@ public final class InodeFile extends Inode {
 
   // length of inode file in bytes.
   private long mLength = 0;
+  private long mBlockLength = 0;
 
   private boolean mCompleted = false;
   private boolean mCacheable = false;
@@ -93,6 +100,7 @@ public final class InodeFile extends Inode {
     super(builder);
     mBlockContainerId = builder.mBlockContainerId;
     mBlockSizeBytes = builder.mBlockSizeBytes;
+    mBlockLength = builder.mBlockLength;
     mTTL = builder.mTTL;
   }
 
@@ -106,6 +114,7 @@ public final class InodeFile extends Inode {
     ret.path = path;
     ret.length = getLength();
     ret.blockSizeBytes = getBlockSizeBytes();
+    ret.blockLength = getBlockLength();
     ret.creationTimeMs = getCreationTimeMs();
     ret.isCacheable = isCacheable();
     ret.isFolder = false;
@@ -155,6 +164,10 @@ public final class InodeFile extends Inode {
    */
   public long getBlockSizeBytes() {
     return mBlockSizeBytes;
+  }
+
+  public long getBlockLength() {
+    return mBlockLength;
   }
 
   /**
@@ -223,6 +236,10 @@ public final class InodeFile extends Inode {
     mLength = length;
   }
 
+  public synchronized void setBlockLength(long blockLength) {
+    mBlockLength = blockLength;
+  }
+
   /**
    * Sets the length of the file. Cannot set the length if the file is complete or the length is
    * negative.
@@ -230,8 +247,7 @@ public final class InodeFile extends Inode {
    * @param length The new length of the file, cannot be negative
    * @throws SuspectedFileSizeException
    */
-  public synchronized void setLength(long length)
-      throws SuspectedFileSizeException {
+  public synchronized void setLength(long length) throws SuspectedFileSizeException {
     if (mCompleted) {
       throw new SuspectedFileSizeException("InodeFile has been completed.");
     }
@@ -240,6 +256,9 @@ public final class InodeFile extends Inode {
     }
     mLength = length;
     mBlocks.clear();
+    if (mBlockLength > 0) {
+      length = mBlockLength;
+    }
     while (length > 0) {
       long blockSize = Math.min(length, mBlockSizeBytes);
       getNewBlockId();

@@ -322,7 +322,7 @@ public final class LineageMaster extends MasterBase {
     LOG.info("Async complete file " + fileId);
     // complete file in Tachyon.
     try {
-      mFileSystemMaster.completeFile(fileId);
+      mFileSystemMaster.completeFile(fileId, 0);
     } catch (InvalidPathException e) {
       // should not happen
       throw new RuntimeException(e);
