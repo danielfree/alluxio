@@ -105,7 +105,8 @@ public abstract class JournalFormatterTestBase {
           .put(JournalEntryType.BLOCK_INFO, new BlockInfoEntry(TEST_BLOCK_ID, TEST_LENGTH_BYTES))
           .put(JournalEntryType.INODE_FILE,
               new InodeFileEntry(TEST_OP_TIME_MS, TEST_FILE_ID, TEST_FILE_NAME, TEST_FILE_ID, true,
-                  true, TEST_OP_TIME_MS, TEST_BLOCK_SIZE_BYTES, TEST_LENGTH_BYTES, true, true,
+                  true, TEST_OP_TIME_MS, TEST_BLOCK_SIZE_BYTES, TEST_LENGTH_BYTES,
+                  TEST_LENGTH_BYTES, true, true,
                   ContiguousSet.create(Range.closedOpen(TEST_BLOCK_ID, TEST_BLOCK_ID + 10),
                       DiscreteDomain.longs()).asList(),
                   Constants.NO_TTL))

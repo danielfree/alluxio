@@ -26,17 +26,19 @@ import tachyon.master.journal.JournalEntryType;
 
 public class InodeFileEntry extends InodeEntry {
   private final long mBlockSizeBytes;
+  private final long mBlockLength;
   private final long mLength;
   private final boolean mCompleted;
   private final boolean mCacheable;
   private final List<Long> mBlocks;
   private final long mTTL;
 
-  public InodeFileEntry(long creationTimeMs, long id, String name, long parentId,
-      boolean persisted, boolean pinned, long lastModificationTimeMs, long blockSizeBytes,
+  public InodeFileEntry(long creationTimeMs, long id, String name, long parentId, boolean persisted,
+      boolean pinned, long lastModificationTimeMs, long blockSizeBytes, long blockLength,
       long length, boolean completed, boolean cacheable, List<Long> blocks, long ttl) {
     super(creationTimeMs, id, name, parentId, persisted, pinned, lastModificationTimeMs);
     mBlockSizeBytes = blockSizeBytes;
+    mBlockLength = blockLength;
     mLength = length;
     mCompleted = completed;
     mCacheable = cacheable;
@@ -47,7 +49,7 @@ public class InodeFileEntry extends InodeEntry {
   public InodeFile toInodeFile() {
     InodeFile inode =
         new InodeFile.Builder().setName(mName).setBlockContainerId(BlockId.getContainerId(mId))
-            .setParentId(mParentId).setBlockSizeBytes(mBlockSizeBytes)
+            .setParentId(mParentId).setBlockSizeBytes(mBlockSizeBytes).setBlockLength(mBlockLength)
             .setCreationTimeMs(mCreationTimeMs).setTTL(mTTL).setPersisted(mPersisted).build();
 
     if (mCompleted) {
@@ -73,6 +75,7 @@ public class InodeFileEntry extends InodeEntry {
   public Map<String, Object> getParameters() {
     Map<String, Object> parameters = super.getParameters();
     parameters.put("blockSizeBytes", mBlockSizeBytes);
+    parameters.put("blockLength", mBlockLength);
     parameters.put("length", mLength);
     parameters.put("completed", mCompleted);
     parameters.put("cacheable", mCacheable);

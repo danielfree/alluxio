@@ -37,6 +37,7 @@
       "ttl":-1,
       "parentId":1,
       "blockSizeBytes":256,
+      "blockLength":256,
       "name":"journalFormatter.test",
       "cacheable":true,
       "id":1,
@@ -100,6 +101,7 @@
     "mParameters":{
       "operationTimeMs":1409349750338,
       "length":256,
+      "blockLength":256,
       "blockIds":[
         1,
         2,

@@ -273,6 +273,7 @@ public final class JsonJournalFormatter implements JournalFormatter {
                 entry.getBoolean("pinned"),
                 entry.getLong("lastModificationTimeMs"),
                 entry.getLong("blockSizeBytes"),
+                entry.getLong("blockLength"),
                 entry.getLong("length"),
                 entry.getBoolean("completed"),
                 entry.getBoolean("cacheable"),

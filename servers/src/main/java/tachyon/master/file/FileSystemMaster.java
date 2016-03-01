@@ -871,7 +871,7 @@ public final class FileSystemMaster extends MasterBase {
     }
     InodeFile inodeFile = (InodeFile) inode;
 
-    long length = inodeFile.getLength();
+    long length = inodeFile.getBlockLength();
     if (length == 0) {
       return 100;
     }

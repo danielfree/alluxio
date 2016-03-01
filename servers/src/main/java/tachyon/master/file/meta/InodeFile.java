@@ -271,6 +271,7 @@ public final class InodeFile extends Inode {
   public String toString() {
     StringBuilder sb = new StringBuilder("InodeFile(");
     sb.append(super.toString()).append(", LENGTH: ").append(mLength);
+    sb.append(", BlockLength: ").append(mBlockLength);
     sb.append(", Cacheable: ").append(mCacheable);
     sb.append(", Completed: ").append(mCompleted);
     sb.append(", Cacheable: ").append(mCacheable);
@@ -283,8 +284,8 @@ public final class InodeFile extends Inode {
   @Override
   public synchronized JournalEntry toJournalEntry() {
     return new InodeFileEntry(getCreationTimeMs(), getId(), getName(), getParentId(), isPersisted(),
-        isPinned(), getLastModificationTimeMs(), getBlockSizeBytes(), getLength(), isCompleted(),
-        isCacheable(), mBlocks, mTTL);
+        isPinned(), getLastModificationTimeMs(), getBlockSizeBytes(), getBlockLength(), getLength(),
+        isCompleted(), isCacheable(), mBlocks, mTTL);
   }
 
   /**
