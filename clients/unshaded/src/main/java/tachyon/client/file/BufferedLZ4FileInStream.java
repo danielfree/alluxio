@@ -173,7 +173,21 @@ public class BufferedLZ4FileInStream extends FilterInputStream {
 
   @Override
   public long skip(long n) throws IOException {
-    throw new IOException("skip not supported");
+    if (mFinished) {
+      return -1;
+    }
+    if (mOffset == mOriginalLen) {
+      refill();
+    }
+    if (mNeedNewBlock) {
+      return -1;
+    }
+    if (mFinished) {
+      return -1;
+    }
+    int skipped = (int) Math.min(n, (long) (mOriginalLen - mOffset));
+    mOffset += skipped;
+    return (long) skipped;
   }
 
   private void refill() throws IOException {

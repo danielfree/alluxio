@@ -62,6 +62,8 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
   private final TachyonStorageType mTachyonStorageType;
   /** Standard block size in bytes of the file, guaranteed for all but the last block */
   private final long mBlockSize;
+  /** Total length of the block in bytes */
+  private final long mBlockLength;
   /** Total length of the file in bytes */
   private final long mFileLength;
   /** File System context containing the FileSystemMasterClient pool */
@@ -75,6 +77,8 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
   private boolean mShouldCacheCurrentBlock;
   /** Current position of the stream */
   private long mPos;
+  /** Current position of the file */
+  private long mFilePos;
   /** Current BlockInStream backing this stream */
   private BlockInStream mCurrentBlockInStream;
   /** Current BlockOutStream writing the data into Tachyon, this may be null */
@@ -92,6 +96,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
   public FileInStream(FileInfo info, InStreamOptions options) {
     mFileInfo = info;
     mBlockSize = info.getBlockSizeBytes();
+    mBlockLength = info.getBlockLength();
     mFileLength = info.getLength();
     mContext = FileSystemContext.INSTANCE;
     mTachyonStorageType = options.getTachyonStorageType();
@@ -116,7 +121,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
 
   @Override
   public int read() throws IOException {
-    if (mPos >= mFileLength) {
+    if (mPos >= mBlockLength) {
       return -1;
     }
 
@@ -129,6 +134,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
       data = mCurrentBlockInStream.read();
       mPos ++;
     }
+    mFilePos ++;
     if (mShouldCacheCurrentBlock) {
       try {
         mCurrentCacheStream.write(data);
@@ -153,7 +159,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
         off >= 0 && len >= 0 && len + off <= b.length, ERR_BUFFER_STATE, b.length, off, len);
     if (len == 0) {
       return 0;
-    } else if (mPos >= mFileLength) {
+    } else if (mPos >= mBlockLength) {
       return -1;
     }
 
@@ -162,7 +168,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
     if (mCurrentBlockInStream != null) {
       LOG.info("currentBlockInStream remaining: " + mCurrentBlockInStream.remaining());
     }
-    while (bytesLeftToRead > 0 && mPos < mFileLength) {
+    while (bytesLeftToRead > 0 && mPos < mBlockLength) {
       checkAndAdvanceBlockInStream();
       int bytesToRead;
       int bytesRead;
@@ -193,29 +199,41 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
       }
       bytesLeftToRead -= bytesRead;
       currentOffset += bytesRead;
+      mFilePos += bytesRead;
     }
     return len - bytesLeftToRead;
   }
 
   @Override
   public long remaining() {
-    return mFileLength - mPos;
+    return mFileLength - mFilePos;
   }
 
   @Override
   public void seek(long pos) throws IOException {
     if (mCompression) {
-      throw new IOException("Compression file does not support seek");
-    }
-    if (mPos == pos) {
-      return;
-    }
-    Preconditions.checkArgument(pos >= 0, ERR_SEEK_NEGATIVE, pos);
-    Preconditions.checkArgument(pos < mFileLength, ERR_SEEK_PAST_END_OF_FILE, pos);
+      if (pos == mFilePos) {
+        return;
+      }
+      Preconditions.checkArgument(pos >= 0, ERR_SEEK_NEGATIVE, pos);
+      Preconditions.checkArgument(pos < mFileLength, ERR_SEEK_PAST_END_OF_FILE, pos);
+      // rewind
+      seekBlockInStream(0);
+      mFilePos = 0;
+      checkAndAdvanceBlockInStream();
+      long skipped = skip(pos);
+    } else {
+      if (mPos == pos) {
+        return;
+      }
+      Preconditions.checkArgument(pos >= 0, ERR_SEEK_NEGATIVE, pos);
+      Preconditions.checkArgument(pos < mFileLength, ERR_SEEK_PAST_END_OF_FILE, pos);
 
-    seekBlockInStream(pos);
-    checkAndAdvanceBlockInStream();
-    mCurrentBlockInStream.seek(mPos % mBlockSize);
+      seekBlockInStream(pos);
+      checkAndAdvanceBlockInStream();
+      mCurrentBlockInStream.seek(mPos % mBlockSize);
+      mFilePos = mPos;
+    }
   }
 
   @Override
@@ -224,7 +242,19 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
       return 0;
     }
     if (mCompression) {
-      throw new IOException("Compression file does not support skip");
+      long toSkip = Math.min(n, mFileLength - mFilePos);
+      long leftToSkip = toSkip;
+      while (leftToSkip > 0 && mPos < mBlockLength) {
+        checkAndAdvanceBlockInStream();
+        long skipped = mBufferedLZ4FileInStream.skip(leftToSkip);
+        mPos = mBufferedLZ4FileInStream.getPos();
+        if (skipped == -1) {
+          continue;
+        }
+        leftToSkip -= skipped;
+      }
+      mFilePos += toSkip;
+      return toSkip;
     }
     long toSkip = Math.min(n, mFileLength - mPos);
     long newPos = mPos + toSkip;
@@ -234,6 +264,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
     if (toSkipInBlock != mCurrentBlockInStream.skip(toSkipInBlock)) {
       throw new IOException("The underlying BlockInStream could not skip " + toSkip);
     }
+    mFilePos += toSkip;
     return toSkip;
   }
 
@@ -288,7 +319,7 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
    * @return the current block id based on mPos, -1 if at the end of the file
    */
   private long getCurrentBlockId() {
-    if (mPos == mFileLength) {
+    if (mPos == mBlockLength) {
       return -1;
     }
     int index = (int) (mPos / mBlockSize);

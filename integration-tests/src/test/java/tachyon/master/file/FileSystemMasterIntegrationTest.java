@@ -507,7 +507,7 @@ public class FileSystemMasterIntegrationTest {
   public void lastModificationTimeCompleteFileTest() throws Exception {
     long fileId = mFsMaster.create(new TachyonURI("/testFile"), CreateOptions.defaults());
     long opTimeMs = TEST_OPERATION_TIME_MS;
-    mFsMaster.completeFileInternal(Lists.<Long>newArrayList(), fileId, 0, false, opTimeMs);
+    mFsMaster.completeFileInternal(Lists.<Long>newArrayList(), fileId, 0, 0, false, opTimeMs);
     FileInfo fileInfo = mFsMaster.getFileInfo(fileId);
     Assert.assertEquals(opTimeMs, fileInfo.lastModificationTimeMs);
   }
