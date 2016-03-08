@@ -282,7 +282,7 @@ abstract class AbstractTFS extends FileSystem {
     }
 
     FileStatus ret =
-        new FileStatus(file.length(), file.isDirectory(), file.getDiskReplication(),
+        new FileStatus(file.blockLength(), file.isDirectory(), file.getDiskReplication(),
             file.getBlockSizeByte(), file.getCreationTimeMs(), file.getCreationTimeMs(), null,
             null, null, new Path(mTachyonHeader + tPath));
     return ret;
@@ -380,7 +380,7 @@ abstract class AbstractTFS extends FileSystem {
       FileInfo info = files.get(k);
       // TODO(hy): Replicate 3 with the number of disk replications.
       ret[k] =
-          new FileStatus(info.getLength(), info.isFolder, 3, info.getBlockSizeBytes(),
+          new FileStatus(info.getBlockLength(), info.isFolder, 3, info.getBlockSizeBytes(),
               info.getCreationTimeMs(), info.getCreationTimeMs(), null, null, null, new Path(
                   mTachyonHeader + info.getPath()));
     }

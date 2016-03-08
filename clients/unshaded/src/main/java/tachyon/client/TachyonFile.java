@@ -338,6 +338,10 @@ public class TachyonFile implements Comparable<TachyonFile> {
     return getUnCachedFileStatus().getLength();
   }
 
+  public long blockLength() throws IOException {
+    return getUnCachedFileStatus().getBlockLength();
+  }
+
   /**
    * @return true if this file is pinned, false otherwise
    * @throws IOException if the underlying file does not exist or its metadata is corrupted
