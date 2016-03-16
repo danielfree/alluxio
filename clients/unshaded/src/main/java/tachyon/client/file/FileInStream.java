@@ -165,9 +165,6 @@ public final class FileInStream extends InputStream implements BoundedStream, Se
 
     int currentOffset = off;
     int bytesLeftToRead = len;
-    if (mCurrentBlockInStream != null) {
-      LOG.info("currentBlockInStream remaining: " + mCurrentBlockInStream.remaining());
-    }
     while (bytesLeftToRead > 0 && mPos < mBlockLength) {
       checkAndAdvanceBlockInStream();
       int bytesToRead;
