@@ -134,10 +134,14 @@ public class FileOutStream extends OutputStream implements Cancelable {
     }
     // for lz4 compression, there might be remaining buffered bytes we need to fetch
     if (mCompression) {
-      mLz4CompressOutStream.finish();
-      byte[] remainingBytes = mCompressByteArrayOutStream.toByteArray();
-      directWrite(remainingBytes,0,remainingBytes.length);
-      mLz4CompressOutStream.close();
+      try {
+        mLz4CompressOutStream.finish();
+        byte[] remainingBytes = mCompressByteArrayOutStream.toByteArray();
+        directWrite(remainingBytes, 0, remainingBytes.length);
+        mLz4CompressOutStream.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
 
     if (mCurrentBlockOutStream != null) {
