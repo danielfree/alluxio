@@ -45,6 +45,7 @@ public final class OutStreamOptions {
   private String mGroup;
   private Mode mMode;
   private String mUfsPath;
+  private boolean mUseCompression;
 
   /**
    * @return the default {@link OutStreamOptions}
@@ -59,8 +60,8 @@ public final class OutStreamOptions {
     mTtlAction = TtlAction.DELETE;
 
     try {
-      mLocationPolicy = CommonUtils.createNewClassInstance(
-          Configuration.<FileWriteLocationPolicy>getClass(
+      mLocationPolicy =
+          CommonUtils.createNewClassInstance(Configuration.<FileWriteLocationPolicy>getClass(
               PropertyKey.USER_FILE_WRITE_LOCATION_POLICY), new Class[] {}, new Object[] {});
     } catch (Exception e) {
       throw Throwables.propagate(e);
@@ -70,6 +71,7 @@ public final class OutStreamOptions {
     mOwner = SecurityUtils.getOwnerFromLoginModule();
     mGroup = SecurityUtils.getGroupFromLoginModule();
     mMode = Mode.defaults().applyFileUMask();
+    mUseCompression = Configuration.getBoolean(PropertyKey.USER_BLOCK_USE_COMPRESSION);
   }
 
   /**
@@ -158,6 +160,13 @@ public final class OutStreamOptions {
   }
 
   /**
+   * @return whether compression is used
+   */
+  public boolean getUserCompression() {
+    return mUseCompression;
+  }
+
+  /**
    * Sets the size of the block in bytes.
    *
    * @param blockSizeBytes the block size to use
@@ -172,8 +181,8 @@ public final class OutStreamOptions {
    * Sets the time to live.
    *
    * @param ttl the TTL (time to live) value to use; it identifies duration (in milliseconds) the
-   *        created file should be kept around before it is automatically deleted, no matter
-   *        whether the file is pinned
+   *        created file should be kept around before it is automatically deleted, no matter whether
+   *        the file is pinned
    * @return the updated options object
    */
   public OutStreamOptions setTtl(long ttl) {
@@ -258,6 +267,15 @@ public final class OutStreamOptions {
     return this;
   }
 
+  /**
+   * @param useCompression whether to use compression
+   * @return the updated options object
+   */
+  public OutStreamOptions setUseCompression(boolean useCompression) {
+    mUseCompression = useCompression;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -267,45 +285,26 @@ public final class OutStreamOptions {
       return false;
     }
     OutStreamOptions that = (OutStreamOptions) o;
-    return Objects.equal(mBlockSizeBytes, that.mBlockSizeBytes)
-        && Objects.equal(mTtl, that.mTtl)
+    return Objects.equal(mBlockSizeBytes, that.mBlockSizeBytes) && Objects.equal(mTtl, that.mTtl)
         && Objects.equal(mTtlAction, that.mTtlAction)
-        && Objects.equal(mLocationPolicy, that.mLocationPolicy)
-        && mWriteTier == that.mWriteTier
-        && Objects.equal(mWriteType, that.mWriteType)
-        && Objects.equal(mUfsPath, that.mUfsPath)
-        && Objects.equal(mOwner, that.mOwner)
-        && Objects.equal(mGroup, that.mGroup)
-        && Objects.equal(mMode, that.mMode);
+        && Objects.equal(mLocationPolicy, that.mLocationPolicy) && mWriteTier == that.mWriteTier
+        && Objects.equal(mWriteType, that.mWriteType) && Objects.equal(mUfsPath, that.mUfsPath)
+        && Objects.equal(mOwner, that.mOwner) && Objects.equal(mGroup, that.mGroup)
+        && Objects.equal(mMode, that.mMode) && mUseCompression == that.mUseCompression;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(mBlockSizeBytes,
-        mTtl,
-        mTtlAction,
-        mLocationPolicy,
-        mWriteTier,
-        mWriteType,
-        mUfsPath,
-        mOwner,
-        mGroup,
-        mMode);
+    return Objects.hashCode(mBlockSizeBytes, mTtl, mTtlAction, mLocationPolicy, mWriteTier,
+        mWriteType, mUfsPath, mOwner, mGroup, mMode, mUseCompression);
   }
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
-        .add("blockSizeBytes", mBlockSizeBytes)
-        .add("ttl", mTtl)
-        .add("ttlAction", mTtlAction)
-        .add("locationPolicy", mLocationPolicy)
-        .add("writeTier", mWriteTier)
-        .add("writeType", mWriteType)
-        .add("owner", mOwner)
-        .add("group", mGroup)
-        .add("mode", mMode)
-        .add("ufsPath", mUfsPath)
-        .toString();
+    return Objects.toStringHelper(this).add("blockSizeBytes", mBlockSizeBytes).add("ttl", mTtl)
+        .add("ttlAction", mTtlAction).add("locationPolicy", mLocationPolicy)
+        .add("writeTier", mWriteTier).add("writeType", mWriteType).add("owner", mOwner)
+        .add("group", mGroup).add("mode", mMode).add("ufsPath", mUfsPath)
+        .add("useCompression", mUseCompression).toString();
   }
 }

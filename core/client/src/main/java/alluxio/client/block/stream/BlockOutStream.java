@@ -22,6 +22,7 @@ import alluxio.util.CommonUtils;
 import alluxio.wire.WorkerNetAddress;
 
 import com.google.common.io.Closer;
+import net.jpountz.lz4.LZ4CompatibleOutputStream;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -40,6 +41,7 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
   private final Closer mCloser;
   private final BlockWorkerClient mBlockWorkerClient;
   private final PacketOutStream mOutStream;
+  private LZ4CompatibleOutputStream mLz4CompatibleOutputStream;
   private boolean mClosed;
 
   /**
@@ -103,17 +105,39 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
 
   @Override
   public void write(byte[] b) throws IOException {
-    mOutStream.write(b);
+    if (mLz4CompatibleOutputStream != null) {
+      mLz4CompatibleOutputStream.write(b);
+    } else {
+      mOutStream.write(b);
+    }
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    mOutStream.write(b, off, len);
+    if (mLz4CompatibleOutputStream != null) {
+      mLz4CompatibleOutputStream.write(b, off, len);
+    } else {
+      mOutStream.write(b, off, len);
+    }
   }
 
+  // return the remaining size of current block - but for compression we should use another metric
+  // to show how many uncompressed bytes we can write to current block
   @Override
   public long remaining() {
-    return mOutStream.remaining();
+    // estimate uncompressed bytes we can write based on remaining block size
+    long remainingBytes = mOutStream.remaining();
+    if (mLz4CompatibleOutputStream != null) {
+      if (remainingBytes < 64 * 1024) {
+        return 0;
+      }
+      // hack: roughly calculate the ratio based on LZ4 default (v1.7.3) ratio on lz4 page
+      // 64*1024 bytes input -> 31207.765 bytes output
+      long estimateBytes = Math.round(remainingBytes * 2.099);
+      return estimateBytes;
+    } else {
+      return mOutStream.remaining();
+    }
   }
 
   @Override
@@ -157,8 +181,12 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
       return;
     }
     try {
-      mOutStream.close();
-      if (remaining() < mBlockSize) {
+      if (mLz4CompatibleOutputStream != null) {
+        mLz4CompatibleOutputStream.close();
+      } else {
+        mOutStream.close();
+      }
+      if (mOutStream.remaining() < mBlockSize) {
         mBlockWorkerClient.cacheBlock(mBlockId);
       }
     } catch (AlluxioException e) {
@@ -189,6 +217,15 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
     mBlockSize = blockSize;
     mCloser = Closer.create();
     mBlockWorkerClient = mCloser.register(blockWorkerClient);
+    if (options.getUserCompression()) {
+      try {
+        mLz4CompatibleOutputStream = new LZ4CompatibleOutputStream(mOutStream);
+      } catch (IOException e) {
+        mLz4CompatibleOutputStream = null;
+      }
+    } else {
+      mLz4CompatibleOutputStream = null;
+    }
     mClosed = false;
   }
 }

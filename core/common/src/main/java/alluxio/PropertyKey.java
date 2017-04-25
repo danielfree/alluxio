@@ -264,6 +264,7 @@ public enum PropertyKey {
   USER_BLOCK_REMOTE_WRITER_CLASS(Name.USER_BLOCK_REMOTE_WRITER_CLASS,
       "alluxio.client.netty.NettyRemoteBlockWriter"),
   USER_BLOCK_SIZE_BYTES_DEFAULT(Name.USER_BLOCK_SIZE_BYTES_DEFAULT, "512MB"),
+  USER_BLOCK_USE_COMPRESSION(Name.USER_BLOCK_USE_COMPRESSION, false),
   USER_BLOCK_WORKER_CLIENT_THREADS(Name.USER_BLOCK_WORKER_CLIENT_THREADS, 10),
   USER_BLOCK_WORKER_CLIENT_POOL_SIZE_MAX(Name.USER_BLOCK_WORKER_CLIENT_POOL_SIZE_MAX, 128),
   USER_BLOCK_WORKER_CLIENT_POOL_GC_THRESHOLD_MS(
@@ -723,6 +724,7 @@ public enum PropertyKey {
         "alluxio.user.block.remote.writer.class";
     public static final String USER_BLOCK_SIZE_BYTES_DEFAULT =
         "alluxio.user.block.size.bytes.default";
+    public static final String USER_BLOCK_USE_COMPRESSION = "alluxio.user.block.use.compression";
     public static final String USER_BLOCK_WORKER_CLIENT_THREADS =
         "alluxio.user.block.worker.client.threads";
     public static final String USER_BLOCK_WORKER_CLIENT_POOL_SIZE_MAX =
