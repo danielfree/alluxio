@@ -32,7 +32,7 @@ public class TestBlockWorkerClient implements BlockWorkerClient {
   public void accessBlock(long blockId) throws IOException {}
 
   @Override
-  public void cacheBlock(long blockId) throws IOException, AlluxioException {}
+  public void cacheBlock(long blockId, long fileSize) throws IOException, AlluxioException {}
 
   @Override
   public void cancelBlock(long blockId) throws IOException, AlluxioException {}

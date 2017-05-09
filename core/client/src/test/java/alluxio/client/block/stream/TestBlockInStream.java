@@ -28,6 +28,6 @@ public class TestBlockInStream extends BlockInStream {
    */
   public TestBlockInStream(long blockId, byte[] data) {
     super(new TestPacketInStream(data, blockId, data.length, true), new TestBlockWorkerClient(),
-        Closer.create(), InStreamOptions.defaults());
+            data.length, Closer.create(), InStreamOptions.defaults());
   }
 }

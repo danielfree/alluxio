@@ -45,6 +45,7 @@ public final class InStreamOptions {
   private int mMaxUfsReadConcurrency;
   /** The location policy to determine the worker location to serve UFS block reads. */
   private BlockLocationPolicy mUfsReadLocationPolicy;
+  private boolean mUseCompression;
 
   /**
    * @return the default {@link InStreamOptions}
@@ -73,6 +74,7 @@ public final class InStreamOptions {
     mSeekBufferSizeBytes = Configuration.getBytes(PropertyKey.USER_FILE_SEEK_BUFFER_SIZE_BYTES);
     mMaxUfsReadConcurrency =
         Configuration.getInt(PropertyKey.USER_UFS_BLOCK_READ_CONCURRENCY_MAX);
+    mUseCompression = Configuration.getBoolean(PropertyKey.USER_BLOCK_USE_COMPRESSION);
   }
 
   /**
@@ -111,6 +113,13 @@ public final class InStreamOptions {
    */
   public BlockLocationPolicy getUfsReadLocationPolicy() {
     return mUfsReadLocationPolicy;
+  }
+
+  /**
+   * @return whether to user compression
+   */
+  public boolean getUseCompression() {
+    return mUseCompression;
   }
 
   /**
@@ -216,19 +225,14 @@ public final class InStreamOptions {
         && Objects.equal(mCachePartiallyReadBlock, that.mCachePartiallyReadBlock)
         && Objects.equal(mSeekBufferSizeBytes, that.mSeekBufferSizeBytes)
         && Objects.equal(mMaxUfsReadConcurrency, that.mMaxUfsReadConcurrency)
-        && Objects.equal(mUfsReadLocationPolicy, that.mUfsReadLocationPolicy);
+        && Objects.equal(mUfsReadLocationPolicy, that.mUfsReadLocationPolicy)
+        && Objects.equal(mUseCompression, that.mUseCompression);
   }
 
   @Override
   public int hashCode() {
-    return Objects
-        .hashCode(
-            mCacheLocationPolicy,
-            mReadType,
-            mCachePartiallyReadBlock,
-            mSeekBufferSizeBytes,
-            mMaxUfsReadConcurrency,
-            mUfsReadLocationPolicy);
+    return Objects.hashCode(mCacheLocationPolicy, mReadType, mCachePartiallyReadBlock,
+        mSeekBufferSizeBytes, mMaxUfsReadConcurrency, mUfsReadLocationPolicy, mUseCompression);
   }
 
   @Override

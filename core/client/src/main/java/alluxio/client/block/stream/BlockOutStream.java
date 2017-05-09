@@ -43,6 +43,7 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
   private final PacketOutStream mOutStream;
   private LZ4CompatibleOutputStream mLz4CompatibleOutputStream;
   private boolean mClosed;
+  private long mBytesWritten;
 
   /**
    * Creates a new local block output stream.
@@ -110,6 +111,7 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
     } else {
       mOutStream.write(b);
     }
+    mBytesWritten += b.length;
   }
 
   @Override
@@ -119,12 +121,14 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
     } else {
       mOutStream.write(b, off, len);
     }
+    mBytesWritten += len;
   }
 
   // return the remaining size of current block - but for compression we should use another metric
   // to show how many uncompressed bytes we can write to current block
   @Override
   public long remaining() {
+    /** deprecated
     // estimate uncompressed bytes we can write based on remaining block size
     long remainingBytes = mOutStream.remaining();
     if (mLz4CompatibleOutputStream != null) {
@@ -138,6 +142,10 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
     } else {
       return mOutStream.remaining();
     }
+     **/
+    // now we treat remaining bytes as maximum size(512M) - written bytes, e.g. 512M data can be
+    // stored in the same block with or without compression
+    return mBlockSize - mBytesWritten;
   }
 
   @Override
@@ -187,7 +195,7 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
         mOutStream.close();
       }
       if (mOutStream.remaining() < mBlockSize) {
-        mBlockWorkerClient.cacheBlock(mBlockId);
+        mBlockWorkerClient.cacheBlock(mBlockId, mBytesWritten);
       }
     } catch (AlluxioException e) {
       mCloser.rethrow(new IOException(e));

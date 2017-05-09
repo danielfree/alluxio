@@ -27,11 +27,13 @@ import alluxio.exception.AlluxioException;
 import alluxio.proto.dataserver.Protocol;
 import alluxio.util.CommonUtils;
 import alluxio.util.network.NetworkAddressUtils;
+import alluxio.wire.BlockInfo;
 import alluxio.wire.LockBlockResult;
 import alluxio.wire.WorkerNetAddress;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.Closer;
+import net.jpountz.lz4.LZ4CompatibleInputStream;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -58,8 +60,11 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
   /** Helper to manage closeables. */
   private final Closer mCloser;
   private final BlockWorkerClient mBlockWorkerClient;
+  private final long mFileSize;
   private final boolean mLocal;
   private final PacketInStream mInputStream;
+  private long mBytesRead;
+  private LZ4CompatibleInputStream mLZ4CompatibleInputStream;
 
   /**
    * Creates an instance of local {@link BlockInStream} that reads from local worker.
@@ -86,7 +91,9 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
           .createLocalPacketInStream(lockBlockResource.getResult().getBlockPath(), blockId,
               blockSize));
       blockWorkerClient.accessBlock(blockId);
-      return new BlockInStream(inStream, blockWorkerClient, closer, options);
+      BlockInfo blockInfo = context.acquireBlockMasterClientResource().get().getBlockInfo(blockId);
+      return new BlockInStream(inStream, blockWorkerClient, blockInfo.getFileSize(), closer,
+          options);
     } catch (AlluxioException | IOException e) {
       CommonUtils.closeQuietly(closer);
       throw CommonUtils.castToIOException(e);
@@ -119,7 +126,9 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
               lockBlockResource.getResult().getLockId(), blockWorkerClient.getSessionId(),
               blockSize, false, Protocol.RequestType.ALLUXIO_BLOCK));
       blockWorkerClient.accessBlock(blockId);
-      return new BlockInStream(inStream, blockWorkerClient, closer, options);
+      BlockInfo blockInfo = context.acquireBlockMasterClientResource().get().getBlockInfo(blockId);
+      return new BlockInStream(inStream, blockWorkerClient, blockInfo.getFileSize(), closer,
+          options);
     } catch (AlluxioException | IOException e) {
       CommonUtils.closeQuietly(closer);
       throw CommonUtils.castToIOException(e);
@@ -183,7 +192,9 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
                 lockBlockResult.getLockId(), blockWorkerClient.getSessionId(), blockSize,
                 !options.getAlluxioStorageType().isStore(), Protocol.RequestType.UFS_BLOCK));
       }
-      return new BlockInStream(inStream, blockWorkerClient, closer, options);
+      BlockInfo blockInfo = context.acquireBlockMasterClientResource().get().getBlockInfo(blockId);
+      return new BlockInStream(inStream, blockWorkerClient, blockInfo.getFileSize(), closer,
+          options);
     } catch (AlluxioException | IOException e) {
       CommonUtils.closeQuietly(closer);
       throw CommonUtils.castToIOException(e);
@@ -196,18 +207,85 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
   }
 
   @Override
+  public int read() throws IOException {
+    if (mLZ4CompatibleInputStream != null) {
+      int read = mLZ4CompatibleInputStream.read();
+      if (read != -1) {
+        mBytesRead += read;
+      }
+      return read;
+    } else {
+      int read = super.read();
+      if (read != -1) {
+        mBytesRead += read;
+      }
+      return read;
+    }
+  }
+
+  @Override
+  public int read(byte[] b, int off, int len) throws IOException {
+    if (mLZ4CompatibleInputStream != null) {
+      int read = mLZ4CompatibleInputStream.read(b, off, len);
+      if (read != -1) {
+        mBytesRead += read;
+      }
+      return read;
+    } else {
+      int read = super.read(b, off, len);
+      if (read != -1) {
+        mBytesRead += read;
+      }
+      return read;
+    }
+  }
+
+  @Override
   public long remaining() {
-    return mInputStream.remaining();
+    // this should return the remaining data size in one block, which should be retrieved from
+    // BlockInfo
+    if (mFileSize > 0) {
+      return mFileSize - mBytesRead;
+    } else {
+      return mInputStream.remaining();
+    }
   }
 
   @Override
   public void seek(long pos) throws IOException {
-    mInputStream.seek(pos);
+    if (mLZ4CompatibleInputStream != null) {
+      mLZ4CompatibleInputStream = new LZ4CompatibleInputStream(mInputStream);
+      long skipped = mLZ4CompatibleInputStream.skip(pos);
+      long remaining = pos - skipped;
+      while (remaining > 0) {
+        skipped = mLZ4CompatibleInputStream.skip(remaining);
+        if (skipped == -1) {
+          return;
+        }
+        remaining = remaining - skipped;
+      }
+      mBytesRead = pos;
+    } else {
+      mInputStream.seek(pos);
+      mBytesRead = pos;
+    }
   }
 
   @Override
   public int positionedRead(long pos, byte[] b, int off, int len) throws IOException {
-    return mInputStream.positionedRead(pos, b, off, len);
+    if (mLZ4CompatibleInputStream != null) {
+      seek(pos);
+      int read = mLZ4CompatibleInputStream.read(b, off, len);
+      if (read != -1) {
+        mBytesRead += read;
+      }
+      return read;
+    } else {
+      mBytesRead = pos;
+      int read = mInputStream.positionedRead(pos, b, off, len);
+      mBytesRead += read;
+      return read;
+    }
   }
 
   @Override
@@ -232,19 +310,31 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
    *
    * @param inputStream the packet inputstream
    * @param blockWorkerClient the block worker client
+   * @param fileSize the actual file size
    * @param closer the closer registered with closable resources open so far
    * @param options the options
    */
   protected BlockInStream(PacketInStream inputStream, BlockWorkerClient blockWorkerClient,
-      Closer closer, InStreamOptions options) {
+      long fileSize, Closer closer, InStreamOptions options) {
     super(inputStream);
 
     mInputStream = inputStream;
     mBlockWorkerClient = blockWorkerClient;
+    mFileSize = fileSize;
+    mBytesRead = 0;
 
     mCloser = closer;
     mCloser.register(mInputStream);
     mLocal = blockWorkerClient.getDataServerAddress().getHostName()
         .equals(NetworkAddressUtils.getClientHostName());
+    if (options.getUseCompression()) {
+      try {
+        mLZ4CompatibleInputStream = new LZ4CompatibleInputStream(mInputStream);
+      } catch (IOException e) {
+        mLZ4CompatibleInputStream = null;
+      }
+    } else {
+      mLZ4CompatibleInputStream = null;
+    }
   }
 }
