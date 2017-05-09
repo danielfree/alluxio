@@ -56,6 +56,7 @@ service BlockMasterWorkerService extends common.AlluxioService {
     /** the alias of the target tier */ 3: string tierAlias,
     /** the id of the block being committed */ 4: i64 blockId,
     /** the length of the block being committed */ 5: i64 length,
+    /** the actual file size */ 6: i64 fileSize,
     )
     throws (1: exception.AlluxioTException e)
 

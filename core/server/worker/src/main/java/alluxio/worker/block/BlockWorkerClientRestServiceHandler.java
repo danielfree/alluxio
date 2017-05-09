@@ -131,6 +131,7 @@ public final class BlockWorkerClientRestServiceHandler {
    * @summary cache a block
    * @param sessionId the session id
    * @param blockId the block id
+   * @param fileSize the actual file size
    * @return the response object
    */
   @POST
@@ -138,13 +139,14 @@ public final class BlockWorkerClientRestServiceHandler {
   @Produces(MediaType.APPLICATION_JSON)
   @ReturnType("java.lang.Void")
   public Response cacheBlock(@QueryParam("sessionId") final Long sessionId,
-      @QueryParam("blockId") final Long blockId) {
+      @QueryParam("blockId") final Long blockId, @QueryParam("fileSize") final Long fileSize) {
     return RestUtils.call(new RestUtils.RestCallable<Void>() {
       @Override
       public Void call() throws Exception {
         Preconditions.checkNotNull(blockId, "required 'blockId' parameter is missing");
         Preconditions.checkNotNull(sessionId, "required 'sessionId' parameter is missing");
-        mBlockWorker.commitBlock(sessionId, blockId);
+        Preconditions.checkNotNull(sessionId, "required 'fileSize' parameter is missing");
+        mBlockWorker.commitBlock(sessionId, blockId, fileSize);
         return null;
       }
     });

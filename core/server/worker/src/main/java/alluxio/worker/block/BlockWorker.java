@@ -75,17 +75,18 @@ public interface BlockWorker extends Worker {
   /**
    * Commits a block to Alluxio managed space. The block must be temporary. The block is persisted
    * after {@link BlockStore#commitBlock(long, long)}. The block will not be accessible until
-   * {@link BlockMasterClient#commitBlock(long, long, String, long, long)} succeeds.
+   * {@link BlockMasterClient#commitBlock(long, long, String, long, long, long)} succeeds.
    *
    * @param sessionId the id of the client
    * @param blockId the id of the block to commit
+   * @param fileSize the actual file size
    * @throws BlockAlreadyExistsException if blockId already exists in committed blocks
    * @throws BlockDoesNotExistException if the temporary block cannot be found
    * @throws InvalidWorkerStateException if blockId does not belong to sessionId
    * @throws IOException if the block cannot be moved from temporary path to committed path
    * @throws WorkerOutOfSpaceException if there is no more space left to hold the block
    */
-  void commitBlock(long sessionId, long blockId)
+  void commitBlock(long sessionId, long blockId, long fileSize)
       throws BlockAlreadyExistsException, BlockDoesNotExistException, InvalidWorkerStateException,
       IOException, WorkerOutOfSpaceException;
 

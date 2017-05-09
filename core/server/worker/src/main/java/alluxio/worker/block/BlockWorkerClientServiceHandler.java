@@ -95,16 +95,17 @@ public final class BlockWorkerClientServiceHandler implements BlockWorkerClientS
    *
    * @param sessionId the id of the client requesting the commit
    * @param blockId the id of the block to commit
+   * @param fileSize the actual file size
    * @throws AlluxioTException if an Alluxio error occurs
    * @throws ThriftIOException if an I/O error occurs
    */
   @Override
-  public void cacheBlock(final long sessionId, final long blockId)
+  public void cacheBlock(final long sessionId, final long blockId, final long fileSize)
       throws AlluxioTException, ThriftIOException {
     RpcUtils.callAndLog(LOG, new RpcCallableThrowsIOException<Void>() {
       @Override
       public Void call() throws AlluxioException, IOException {
-        mWorker.commitBlock(sessionId, blockId);
+        mWorker.commitBlock(sessionId, blockId, fileSize);
         return null;
       }
 

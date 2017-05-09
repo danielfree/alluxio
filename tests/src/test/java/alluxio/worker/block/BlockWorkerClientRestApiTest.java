@@ -70,7 +70,7 @@ public final class BlockWorkerClientRestApiTest extends RestApiTest {
   @Test
   public void accessBlock() throws Exception {
     mBlockWorker.createBlock(SESSION_ID, BLOCK_ID, TIER_ALIAS, INITIAL_BYTES);
-    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID);
+    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID, INITIAL_BYTES);
 
     Map<String, String> params = new HashMap<>();
     params.put("blockId", Long.toString(BLOCK_ID));
@@ -82,7 +82,7 @@ public final class BlockWorkerClientRestApiTest extends RestApiTest {
   @Test
   public void cacheBlock() throws Exception {
     mBlockWorker.createBlock(SESSION_ID, BLOCK_ID, TIER_ALIAS, INITIAL_BYTES);
-    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID);
+    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID, INITIAL_BYTES);
 
     Map<String, String> params = new HashMap<>();
     params.put("blockId", Long.toString(BLOCK_ID));
@@ -106,7 +106,7 @@ public final class BlockWorkerClientRestApiTest extends RestApiTest {
   @Test
   public void lockBlock() throws Exception {
     mBlockWorker.createBlock(SESSION_ID, BLOCK_ID, TIER_ALIAS, INITIAL_BYTES);
-    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID);
+    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID, INITIAL_BYTES);
 
     Map<String, String> params = new HashMap<>();
     params.put("blockId", Long.toString(BLOCK_ID));
@@ -122,7 +122,7 @@ public final class BlockWorkerClientRestApiTest extends RestApiTest {
   @Test
   public void promoteBlock() throws Exception {
     mBlockWorker.createBlock(SESSION_ID, BLOCK_ID, TIER_ALIAS, INITIAL_BYTES);
-    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID);
+    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID, INITIAL_BYTES);
 
     Map<String, String> params = new HashMap<>();
     params.put("blockId", Long.toString(BLOCK_ID));
@@ -137,7 +137,7 @@ public final class BlockWorkerClientRestApiTest extends RestApiTest {
     BlockWriter writer = mBlockWorker.getTempBlockWriterRemote(SESSION_ID, BLOCK_ID);
     writer.append(BYTE_BUFFER);
     writer.close();
-    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID);
+    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID, INITIAL_BYTES);
     long lockId = mBlockWorker.lockBlock(SESSION_ID, BLOCK_ID);
 
     Map<String, String> params = new HashMap<>();
@@ -190,7 +190,7 @@ public final class BlockWorkerClientRestApiTest extends RestApiTest {
     BlockWriter writer = mBlockWorker.getTempBlockWriterRemote(SESSION_ID, BLOCK_ID);
     writer.append(BYTE_BUFFER);
     writer.close();
-    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID);
+    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID, INITIAL_BYTES);
     mBlockWorker.lockBlock(SESSION_ID, BLOCK_ID);
 
     Map<String, String> params = new HashMap<>();
@@ -225,7 +225,7 @@ public final class BlockWorkerClientRestApiTest extends RestApiTest {
     Assert.assertEquals("", testCase.getResponse(connection));
 
     // Verify that the right data was written.
-    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID);
+    mBlockWorker.commitBlock(SESSION_ID, BLOCK_ID, INITIAL_BYTES);
     long lockId = mBlockWorker.lockBlock(SESSION_ID, BLOCK_ID);
     String file = mBlockWorker.readBlock(SESSION_ID, BLOCK_ID, lockId);
     byte[] result = new byte[INITIAL_BYTES];

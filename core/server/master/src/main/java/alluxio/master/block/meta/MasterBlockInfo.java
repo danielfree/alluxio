@@ -42,6 +42,11 @@ public final class MasterBlockInfo {
    */
   private long mLength;
 
+  /**
+   * The actual file size.
+   */
+  private long mFileSize;
+
   /** Maps from the worker id to the tier alias the block is on. */
   private final Map<Long, String> mWorkerIdToAlias;
 
@@ -53,8 +58,20 @@ public final class MasterBlockInfo {
    */
   public MasterBlockInfo(long blockId, long length) {
     // TODO(gene): Check valid length?
+    this(blockId, length, length);
+  }
+
+  /**
+   * Creates a new instance of {@link MasterBlockInfo}.
+   *
+   * @param blockId the block id to use
+   * @param length the block length in bytes to use
+   * @param fileSize the actual file size
+   */
+  public MasterBlockInfo(long blockId, long length, long fileSize) {
     mBlockId = blockId;
     mLength = length;
+    mFileSize = fileSize;
 
     mWorkerIdToAlias = new HashMap<>();
   }
@@ -78,6 +95,22 @@ public final class MasterBlockInfo {
       LOG.warn("Attempting to update block length ({}) to a different length ({}).", mLength,
           length);
     }
+  }
+
+  /**
+   * get the actual file size.
+   * @return the file size
+   */
+  public long getFileSize() {
+    return mFileSize;
+  }
+
+  /**
+   * set the actual file size.
+   * @param fileSize the file size
+   */
+  public void setFileSize(long fileSize) {
+    mFileSize = fileSize;
   }
 
   /**

@@ -190,12 +190,13 @@ public final class RetryHandlingBlockWorkerClient
   }
 
   @Override
-  public void cacheBlock(final long blockId) throws IOException, AlluxioException {
+  public void cacheBlock(final long blockId, final long fileSize)
+      throws IOException, AlluxioException {
     retryRPC(new RpcCallableThrowsAlluxioTException<Void, BlockWorkerClientService.Client>() {
       @Override
       public Void call(BlockWorkerClientService.Client client)
           throws AlluxioTException, TException {
-        client.cacheBlock(getSessionId(), blockId);
+        client.cacheBlock(getSessionId(), blockId, fileSize);
         return null;
       }
     });

@@ -77,17 +77,18 @@ public final class BlockMasterClient extends AbstractMasterClient {
    * @param tierAlias the alias of the tier the block is being committed to
    * @param blockId the block id being committed
    * @param length the length of the block being committed
+   * @param fileSize the actual file size
    * @throws AlluxioTException if it fails to commit the block
    * @throws ConnectionFailedException if network connection failed
    * @throws IOException if an I/O error occurs
    */
   public synchronized void commitBlock(final long workerId, final long usedBytesOnTier,
-      final String tierAlias, final long blockId, final long length)
+      final String tierAlias, final long blockId, final long length, final long fileSize)
           throws AlluxioTException, IOException, ConnectionFailedException {
     retryRPC(new RpcCallable<Void>() {
       @Override
       public Void call() throws TException {
-        mClient.commitBlock(workerId, usedBytesOnTier, tierAlias, blockId, length);
+        mClient.commitBlock(workerId, usedBytesOnTier, tierAlias, blockId, length, fileSize);
         return null;
       }
     });

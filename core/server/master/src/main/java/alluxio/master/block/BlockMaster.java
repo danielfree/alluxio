@@ -430,11 +430,12 @@ public final class BlockMaster extends AbstractMaster implements ContainerIdGene
    * @param tierAlias the alias of the storage tier where the worker is committing the block to
    * @param blockId the committing block id
    * @param length the length of the block
+   * @param fileSize the actual file size
    * @throws NoWorkerException if the workerId is not active
    */
   // TODO(binfan): check the logic is correct or not when commitBlock is a retry
   public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId,
-      long length) throws NoWorkerException {
+      long length, long fileSize) throws NoWorkerException {
     LOG.debug("Commit block from workerId: {}, usedBytesOnTier: {}, blockId: {}, length: {}",
         workerId, usedBytesOnTier, blockId, length);
 
@@ -453,9 +454,10 @@ public final class BlockMaster extends AbstractMaster implements ContainerIdGene
           MasterBlockInfo block = mBlocks.get(blockId);
           if (block == null) {
             // The block metadata doesn't exist yet.
-            block = new MasterBlockInfo(blockId, length);
+            block = new MasterBlockInfo(blockId, length, fileSize);
             newBlock = true;
           }
+          block.setFileSize(fileSize);
 
           // Lock the block metadata.
           synchronized (block) {
@@ -807,7 +809,8 @@ public final class BlockMaster extends AbstractMaster implements ContainerIdGene
       }
     }
     return new BlockInfo().setBlockId(masterBlockInfo.getBlockId())
-        .setLength(masterBlockInfo.getLength()).setLocations(locations);
+        .setLength(masterBlockInfo.getLength()).setLocations(locations)
+        .setFileSize(masterBlockInfo.getFileSize());
   }
 
   /**

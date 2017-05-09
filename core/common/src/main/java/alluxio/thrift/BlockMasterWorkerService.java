@@ -54,8 +54,10 @@ public class BlockMasterWorkerService {
      * @param blockId the id of the block being committed
      * 
      * @param length the length of the block being committed
+     * 
+     * @param fileSize the actual file size
      */
-    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length) throws alluxio.thrift.AlluxioTException, org.apache.thrift.TException;
+    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, long fileSize) throws alluxio.thrift.AlluxioTException, org.apache.thrift.TException;
 
     /**
      * Returns a worker id for the given network address.
@@ -96,7 +98,7 @@ public class BlockMasterWorkerService {
 
   public interface AsyncIface extends alluxio.thrift.AlluxioService .AsyncIface {
 
-    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, long fileSize, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void getWorkerId(alluxio.thrift.WorkerNetAddress workerNetAddress, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -126,13 +128,13 @@ public class BlockMasterWorkerService {
       super(iprot, oprot);
     }
 
-    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length) throws alluxio.thrift.AlluxioTException, org.apache.thrift.TException
+    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, long fileSize) throws alluxio.thrift.AlluxioTException, org.apache.thrift.TException
     {
-      send_commitBlock(workerId, usedBytesOnTier, tierAlias, blockId, length);
+      send_commitBlock(workerId, usedBytesOnTier, tierAlias, blockId, length, fileSize);
       recv_commitBlock();
     }
 
-    public void send_commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length) throws org.apache.thrift.TException
+    public void send_commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, long fileSize) throws org.apache.thrift.TException
     {
       commitBlock_args args = new commitBlock_args();
       args.setWorkerId(workerId);
@@ -140,6 +142,7 @@ public class BlockMasterWorkerService {
       args.setTierAlias(tierAlias);
       args.setBlockId(blockId);
       args.setLength(length);
+      args.setFileSize(fileSize);
       sendBase("commitBlock", args);
     }
 
@@ -253,9 +256,9 @@ public class BlockMasterWorkerService {
       super(protocolFactory, clientManager, transport);
     }
 
-    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void commitBlock(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, long fileSize, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      commitBlock_call method_call = new commitBlock_call(workerId, usedBytesOnTier, tierAlias, blockId, length, resultHandler, this, ___protocolFactory, ___transport);
+      commitBlock_call method_call = new commitBlock_call(workerId, usedBytesOnTier, tierAlias, blockId, length, fileSize, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
@@ -266,13 +269,15 @@ public class BlockMasterWorkerService {
       private String tierAlias;
       private long blockId;
       private long length;
-      public commitBlock_call(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private long fileSize;
+      public commitBlock_call(long workerId, long usedBytesOnTier, String tierAlias, long blockId, long length, long fileSize, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.workerId = workerId;
         this.usedBytesOnTier = usedBytesOnTier;
         this.tierAlias = tierAlias;
         this.blockId = blockId;
         this.length = length;
+        this.fileSize = fileSize;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
@@ -283,6 +288,7 @@ public class BlockMasterWorkerService {
         args.setTierAlias(tierAlias);
         args.setBlockId(blockId);
         args.setLength(length);
+        args.setFileSize(fileSize);
         args.write(prot);
         prot.writeMessageEnd();
       }
@@ -450,7 +456,7 @@ public class BlockMasterWorkerService {
       public commitBlock_result getResult(I iface, commitBlock_args args) throws org.apache.thrift.TException {
         commitBlock_result result = new commitBlock_result();
         try {
-          iface.commitBlock(args.workerId, args.usedBytesOnTier, args.tierAlias, args.blockId, args.length);
+          iface.commitBlock(args.workerId, args.usedBytesOnTier, args.tierAlias, args.blockId, args.length, args.fileSize);
         } catch (alluxio.thrift.AlluxioTException e) {
           result.e = e;
         }
@@ -603,7 +609,7 @@ public class BlockMasterWorkerService {
       }
 
       public void start(I iface, commitBlock_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
-        iface.commitBlock(args.workerId, args.usedBytesOnTier, args.tierAlias, args.blockId, args.length,resultHandler);
+        iface.commitBlock(args.workerId, args.usedBytesOnTier, args.tierAlias, args.blockId, args.length, args.fileSize,resultHandler);
       }
     }
 
@@ -788,6 +794,7 @@ public class BlockMasterWorkerService {
     private static final org.apache.thrift.protocol.TField TIER_ALIAS_FIELD_DESC = new org.apache.thrift.protocol.TField("tierAlias", org.apache.thrift.protocol.TType.STRING, (short)3);
     private static final org.apache.thrift.protocol.TField BLOCK_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("blockId", org.apache.thrift.protocol.TType.I64, (short)4);
     private static final org.apache.thrift.protocol.TField LENGTH_FIELD_DESC = new org.apache.thrift.protocol.TField("length", org.apache.thrift.protocol.TType.I64, (short)5);
+    private static final org.apache.thrift.protocol.TField FILE_SIZE_FIELD_DESC = new org.apache.thrift.protocol.TField("fileSize", org.apache.thrift.protocol.TType.I64, (short)6);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -800,6 +807,7 @@ public class BlockMasterWorkerService {
     private String tierAlias; // required
     private long blockId; // required
     private long length; // required
+    private long fileSize; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -822,7 +830,11 @@ public class BlockMasterWorkerService {
       /**
        * the length of the block being committed
        */
-      LENGTH((short)5, "length");
+      LENGTH((short)5, "length"),
+      /**
+       * the actual file size
+       */
+      FILE_SIZE((short)6, "fileSize");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -847,6 +859,8 @@ public class BlockMasterWorkerService {
             return BLOCK_ID;
           case 5: // LENGTH
             return LENGTH;
+          case 6: // FILE_SIZE
+            return FILE_SIZE;
           default:
             return null;
         }
@@ -891,6 +905,7 @@ public class BlockMasterWorkerService {
     private static final int __USEDBYTESONTIER_ISSET_ID = 1;
     private static final int __BLOCKID_ISSET_ID = 2;
     private static final int __LENGTH_ISSET_ID = 3;
+    private static final int __FILESIZE_ISSET_ID = 4;
     private byte __isset_bitfield = 0;
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
@@ -905,6 +920,8 @@ public class BlockMasterWorkerService {
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
       tmpMap.put(_Fields.LENGTH, new org.apache.thrift.meta_data.FieldMetaData("length", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
+      tmpMap.put(_Fields.FILE_SIZE, new org.apache.thrift.meta_data.FieldMetaData("fileSize", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(commitBlock_args.class, metaDataMap);
     }
@@ -917,7 +934,8 @@ public class BlockMasterWorkerService {
       long usedBytesOnTier,
       String tierAlias,
       long blockId,
-      long length)
+      long length,
+      long fileSize)
     {
       this();
       this.workerId = workerId;
@@ -929,6 +947,8 @@ public class BlockMasterWorkerService {
       setBlockIdIsSet(true);
       this.length = length;
       setLengthIsSet(true);
+      this.fileSize = fileSize;
+      setFileSizeIsSet(true);
     }
 
     /**
@@ -943,6 +963,7 @@ public class BlockMasterWorkerService {
       }
       this.blockId = other.blockId;
       this.length = other.length;
+      this.fileSize = other.fileSize;
     }
 
     public commitBlock_args deepCopy() {
@@ -960,6 +981,8 @@ public class BlockMasterWorkerService {
       this.blockId = 0;
       setLengthIsSet(false);
       this.length = 0;
+      setFileSizeIsSet(false);
+      this.fileSize = 0;
     }
 
     /**
@@ -1108,6 +1131,35 @@ public class BlockMasterWorkerService {
       __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __LENGTH_ISSET_ID, value);
     }
 
+    /**
+     * the actual file size
+     */
+    public long getFileSize() {
+      return this.fileSize;
+    }
+
+    /**
+     * the actual file size
+     */
+    public commitBlock_args setFileSize(long fileSize) {
+      this.fileSize = fileSize;
+      setFileSizeIsSet(true);
+      return this;
+    }
+
+    public void unsetFileSize() {
+      __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __FILESIZE_ISSET_ID);
+    }
+
+    /** Returns true if field fileSize is set (has been assigned a value) and false otherwise */
+    public boolean isSetFileSize() {
+      return EncodingUtils.testBit(__isset_bitfield, __FILESIZE_ISSET_ID);
+    }
+
+    public void setFileSizeIsSet(boolean value) {
+      __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __FILESIZE_ISSET_ID, value);
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case WORKER_ID:
@@ -1150,6 +1202,14 @@ public class BlockMasterWorkerService {
         }
         break;
 
+      case FILE_SIZE:
+        if (value == null) {
+          unsetFileSize();
+        } else {
+          setFileSize((Long)value);
+        }
+        break;
+
       }
     }
 
@@ -1169,6 +1229,9 @@ public class BlockMasterWorkerService {
 
       case LENGTH:
         return getLength();
+
+      case FILE_SIZE:
+        return getFileSize();
 
       }
       throw new IllegalStateException();
@@ -1191,6 +1254,8 @@ public class BlockMasterWorkerService {
         return isSetBlockId();
       case LENGTH:
         return isSetLength();
+      case FILE_SIZE:
+        return isSetFileSize();
       }
       throw new IllegalStateException();
     }
@@ -1253,6 +1318,15 @@ public class BlockMasterWorkerService {
           return false;
       }
 
+      boolean this_present_fileSize = true;
+      boolean that_present_fileSize = true;
+      if (this_present_fileSize || that_present_fileSize) {
+        if (!(this_present_fileSize && that_present_fileSize))
+          return false;
+        if (this.fileSize != that.fileSize)
+          return false;
+      }
+
       return true;
     }
 
@@ -1284,6 +1358,11 @@ public class BlockMasterWorkerService {
       list.add(present_length);
       if (present_length)
         list.add(length);
+
+      boolean present_fileSize = true;
+      list.add(present_fileSize);
+      if (present_fileSize)
+        list.add(fileSize);
 
       return list.hashCode();
     }
@@ -1346,6 +1425,16 @@ public class BlockMasterWorkerService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetFileSize()).compareTo(other.isSetFileSize());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetFileSize()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.fileSize, other.fileSize);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -1388,6 +1477,10 @@ public class BlockMasterWorkerService {
       if (!first) sb.append(", ");
       sb.append("length:");
       sb.append(this.length);
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("fileSize:");
+      sb.append(this.fileSize);
       first = false;
       sb.append(")");
       return sb.toString();
@@ -1474,6 +1567,14 @@ public class BlockMasterWorkerService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 6: // FILE_SIZE
+              if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+                struct.fileSize = iprot.readI64();
+                struct.setFileSizeIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -1505,6 +1606,9 @@ public class BlockMasterWorkerService {
         oprot.writeFieldEnd();
         oprot.writeFieldBegin(LENGTH_FIELD_DESC);
         oprot.writeI64(struct.length);
+        oprot.writeFieldEnd();
+        oprot.writeFieldBegin(FILE_SIZE_FIELD_DESC);
+        oprot.writeI64(struct.fileSize);
         oprot.writeFieldEnd();
         oprot.writeFieldStop();
         oprot.writeStructEnd();
@@ -1539,7 +1643,10 @@ public class BlockMasterWorkerService {
         if (struct.isSetLength()) {
           optionals.set(4);
         }
-        oprot.writeBitSet(optionals, 5);
+        if (struct.isSetFileSize()) {
+          optionals.set(5);
+        }
+        oprot.writeBitSet(optionals, 6);
         if (struct.isSetWorkerId()) {
           oprot.writeI64(struct.workerId);
         }
@@ -1555,12 +1662,15 @@ public class BlockMasterWorkerService {
         if (struct.isSetLength()) {
           oprot.writeI64(struct.length);
         }
+        if (struct.isSetFileSize()) {
+          oprot.writeI64(struct.fileSize);
+        }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, commitBlock_args struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(5);
+        BitSet incoming = iprot.readBitSet(6);
         if (incoming.get(0)) {
           struct.workerId = iprot.readI64();
           struct.setWorkerIdIsSet(true);
@@ -1580,6 +1690,10 @@ public class BlockMasterWorkerService {
         if (incoming.get(4)) {
           struct.length = iprot.readI64();
           struct.setLengthIsSet(true);
+        }
+        if (incoming.get(5)) {
+          struct.fileSize = iprot.readI64();
+          struct.setFileSizeIsSet(true);
         }
       }
     }

@@ -245,7 +245,7 @@ public final class DefaultBlockWorker extends AbstractWorker implements BlockWor
   }
 
   @Override
-  public void commitBlock(long sessionId, long blockId)
+  public void commitBlock(long sessionId, long blockId, long fileSize)
       throws BlockAlreadyExistsException, BlockDoesNotExistException, InvalidWorkerStateException,
       IOException, WorkerOutOfSpaceException {
     // NOTE: this may be invoked multiple times due to retry on client side.
@@ -267,7 +267,7 @@ public final class DefaultBlockWorker extends AbstractWorker implements BlockWor
       BlockStoreMeta storeMeta = mBlockStore.getBlockStoreMeta();
       Long bytesUsedOnTier = storeMeta.getUsedBytesOnTiers().get(loc.tierAlias());
       mBlockMasterClient.commitBlock(mWorkerId.get(), bytesUsedOnTier, loc.tierAlias(), blockId,
-          length);
+          length, fileSize);
     } catch (AlluxioTException | IOException | ConnectionFailedException e) {
       throw new IOException(ExceptionMessage.FAILED_COMMIT_BLOCK_TO_MASTER.getMessage(blockId), e);
     } finally {
@@ -439,7 +439,7 @@ public final class DefaultBlockWorker extends AbstractWorker implements BlockWor
     mUnderFileSystemBlockStore.closeReaderOrWriter(sessionId, blockId);
     if (mBlockStore.getTempBlockMeta(sessionId, blockId) != null) {
       try {
-        commitBlock(sessionId, blockId);
+        commitBlock(sessionId, blockId, 0);
       } catch (BlockDoesNotExistException e) {
         // This can only happen if the session is expired. Ignore this exception if that happens.
         LOG.warn("Block {} does not exist while being committed.", blockId);

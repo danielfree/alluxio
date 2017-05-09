@@ -54,8 +54,10 @@ public class BlockWorkerClientService {
      * @param sessionId the id of the current session
      * 
      * @param blockId the id of the block being accessed
+     * 
+     * @param fileSize the actual file size
      */
-    public void cacheBlock(long sessionId, long blockId) throws alluxio.thrift.AlluxioTException, alluxio.thrift.ThriftIOException, org.apache.thrift.TException;
+    public void cacheBlock(long sessionId, long blockId, long fileSize) throws alluxio.thrift.AlluxioTException, alluxio.thrift.ThriftIOException, org.apache.thrift.TException;
 
     /**
      * Used to cancel a block which is being written. worker will delete the temporary block file and
@@ -153,7 +155,7 @@ public class BlockWorkerClientService {
 
     public void accessBlock(long blockId, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
-    public void cacheBlock(long sessionId, long blockId, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void cacheBlock(long sessionId, long blockId, long fileSize, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void cancelBlock(long sessionId, long blockId, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -216,17 +218,18 @@ public class BlockWorkerClientService {
       return;
     }
 
-    public void cacheBlock(long sessionId, long blockId) throws alluxio.thrift.AlluxioTException, alluxio.thrift.ThriftIOException, org.apache.thrift.TException
+    public void cacheBlock(long sessionId, long blockId, long fileSize) throws alluxio.thrift.AlluxioTException, alluxio.thrift.ThriftIOException, org.apache.thrift.TException
     {
-      send_cacheBlock(sessionId, blockId);
+      send_cacheBlock(sessionId, blockId, fileSize);
       recv_cacheBlock();
     }
 
-    public void send_cacheBlock(long sessionId, long blockId) throws org.apache.thrift.TException
+    public void send_cacheBlock(long sessionId, long blockId, long fileSize) throws org.apache.thrift.TException
     {
       cacheBlock_args args = new cacheBlock_args();
       args.setSessionId(sessionId);
       args.setBlockId(blockId);
+      args.setFileSize(fileSize);
       sendBase("cacheBlock", args);
     }
 
@@ -517,9 +520,9 @@ public class BlockWorkerClientService {
       }
     }
 
-    public void cacheBlock(long sessionId, long blockId, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void cacheBlock(long sessionId, long blockId, long fileSize, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      cacheBlock_call method_call = new cacheBlock_call(sessionId, blockId, resultHandler, this, ___protocolFactory, ___transport);
+      cacheBlock_call method_call = new cacheBlock_call(sessionId, blockId, fileSize, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
@@ -527,10 +530,12 @@ public class BlockWorkerClientService {
     public static class cacheBlock_call extends org.apache.thrift.async.TAsyncMethodCall {
       private long sessionId;
       private long blockId;
-      public cacheBlock_call(long sessionId, long blockId, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private long fileSize;
+      public cacheBlock_call(long sessionId, long blockId, long fileSize, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.sessionId = sessionId;
         this.blockId = blockId;
+        this.fileSize = fileSize;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
@@ -538,6 +543,7 @@ public class BlockWorkerClientService {
         cacheBlock_args args = new cacheBlock_args();
         args.setSessionId(sessionId);
         args.setBlockId(blockId);
+        args.setFileSize(fileSize);
         args.write(prot);
         prot.writeMessageEnd();
       }
@@ -904,7 +910,7 @@ public class BlockWorkerClientService {
       public cacheBlock_result getResult(I iface, cacheBlock_args args) throws org.apache.thrift.TException {
         cacheBlock_result result = new cacheBlock_result();
         try {
-          iface.cacheBlock(args.sessionId, args.blockId);
+          iface.cacheBlock(args.sessionId, args.blockId, args.fileSize);
         } catch (alluxio.thrift.AlluxioTException e) {
           result.e = e;
         } catch (alluxio.thrift.ThriftIOException ioe) {
@@ -1258,7 +1264,7 @@ public class BlockWorkerClientService {
       }
 
       public void start(I iface, cacheBlock_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
-        iface.cacheBlock(args.sessionId, args.blockId,resultHandler);
+        iface.cacheBlock(args.sessionId, args.blockId, args.fileSize,resultHandler);
       }
     }
 
@@ -2481,6 +2487,7 @@ public class BlockWorkerClientService {
 
     private static final org.apache.thrift.protocol.TField SESSION_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("sessionId", org.apache.thrift.protocol.TType.I64, (short)1);
     private static final org.apache.thrift.protocol.TField BLOCK_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("blockId", org.apache.thrift.protocol.TType.I64, (short)2);
+    private static final org.apache.thrift.protocol.TField FILE_SIZE_FIELD_DESC = new org.apache.thrift.protocol.TField("fileSize", org.apache.thrift.protocol.TType.I64, (short)3);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -2490,6 +2497,7 @@ public class BlockWorkerClientService {
 
     private long sessionId; // required
     private long blockId; // required
+    private long fileSize; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -2500,7 +2508,11 @@ public class BlockWorkerClientService {
       /**
        * the id of the block being accessed
        */
-      BLOCK_ID((short)2, "blockId");
+      BLOCK_ID((short)2, "blockId"),
+      /**
+       * the actual file size
+       */
+      FILE_SIZE((short)3, "fileSize");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -2519,6 +2531,8 @@ public class BlockWorkerClientService {
             return SESSION_ID;
           case 2: // BLOCK_ID
             return BLOCK_ID;
+          case 3: // FILE_SIZE
+            return FILE_SIZE;
           default:
             return null;
         }
@@ -2561,6 +2575,7 @@ public class BlockWorkerClientService {
     // isset id assignments
     private static final int __SESSIONID_ISSET_ID = 0;
     private static final int __BLOCKID_ISSET_ID = 1;
+    private static final int __FILESIZE_ISSET_ID = 2;
     private byte __isset_bitfield = 0;
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
@@ -2568,6 +2583,8 @@ public class BlockWorkerClientService {
       tmpMap.put(_Fields.SESSION_ID, new org.apache.thrift.meta_data.FieldMetaData("sessionId", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
       tmpMap.put(_Fields.BLOCK_ID, new org.apache.thrift.meta_data.FieldMetaData("blockId", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
+      tmpMap.put(_Fields.FILE_SIZE, new org.apache.thrift.meta_data.FieldMetaData("fileSize", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(cacheBlock_args.class, metaDataMap);
@@ -2578,13 +2595,16 @@ public class BlockWorkerClientService {
 
     public cacheBlock_args(
       long sessionId,
-      long blockId)
+      long blockId,
+      long fileSize)
     {
       this();
       this.sessionId = sessionId;
       setSessionIdIsSet(true);
       this.blockId = blockId;
       setBlockIdIsSet(true);
+      this.fileSize = fileSize;
+      setFileSizeIsSet(true);
     }
 
     /**
@@ -2594,6 +2614,7 @@ public class BlockWorkerClientService {
       __isset_bitfield = other.__isset_bitfield;
       this.sessionId = other.sessionId;
       this.blockId = other.blockId;
+      this.fileSize = other.fileSize;
     }
 
     public cacheBlock_args deepCopy() {
@@ -2606,6 +2627,8 @@ public class BlockWorkerClientService {
       this.sessionId = 0;
       setBlockIdIsSet(false);
       this.blockId = 0;
+      setFileSizeIsSet(false);
+      this.fileSize = 0;
     }
 
     /**
@@ -2666,6 +2689,35 @@ public class BlockWorkerClientService {
       __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __BLOCKID_ISSET_ID, value);
     }
 
+    /**
+     * the actual file size
+     */
+    public long getFileSize() {
+      return this.fileSize;
+    }
+
+    /**
+     * the actual file size
+     */
+    public cacheBlock_args setFileSize(long fileSize) {
+      this.fileSize = fileSize;
+      setFileSizeIsSet(true);
+      return this;
+    }
+
+    public void unsetFileSize() {
+      __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __FILESIZE_ISSET_ID);
+    }
+
+    /** Returns true if field fileSize is set (has been assigned a value) and false otherwise */
+    public boolean isSetFileSize() {
+      return EncodingUtils.testBit(__isset_bitfield, __FILESIZE_ISSET_ID);
+    }
+
+    public void setFileSizeIsSet(boolean value) {
+      __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __FILESIZE_ISSET_ID, value);
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SESSION_ID:
@@ -2684,6 +2736,14 @@ public class BlockWorkerClientService {
         }
         break;
 
+      case FILE_SIZE:
+        if (value == null) {
+          unsetFileSize();
+        } else {
+          setFileSize((Long)value);
+        }
+        break;
+
       }
     }
 
@@ -2694,6 +2754,9 @@ public class BlockWorkerClientService {
 
       case BLOCK_ID:
         return getBlockId();
+
+      case FILE_SIZE:
+        return getFileSize();
 
       }
       throw new IllegalStateException();
@@ -2710,6 +2773,8 @@ public class BlockWorkerClientService {
         return isSetSessionId();
       case BLOCK_ID:
         return isSetBlockId();
+      case FILE_SIZE:
+        return isSetFileSize();
       }
       throw new IllegalStateException();
     }
@@ -2745,6 +2810,15 @@ public class BlockWorkerClientService {
           return false;
       }
 
+      boolean this_present_fileSize = true;
+      boolean that_present_fileSize = true;
+      if (this_present_fileSize || that_present_fileSize) {
+        if (!(this_present_fileSize && that_present_fileSize))
+          return false;
+        if (this.fileSize != that.fileSize)
+          return false;
+      }
+
       return true;
     }
 
@@ -2761,6 +2835,11 @@ public class BlockWorkerClientService {
       list.add(present_blockId);
       if (present_blockId)
         list.add(blockId);
+
+      boolean present_fileSize = true;
+      list.add(present_fileSize);
+      if (present_fileSize)
+        list.add(fileSize);
 
       return list.hashCode();
     }
@@ -2793,6 +2872,16 @@ public class BlockWorkerClientService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetFileSize()).compareTo(other.isSetFileSize());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetFileSize()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.fileSize, other.fileSize);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -2819,6 +2908,10 @@ public class BlockWorkerClientService {
       if (!first) sb.append(", ");
       sb.append("blockId:");
       sb.append(this.blockId);
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("fileSize:");
+      sb.append(this.fileSize);
       first = false;
       sb.append(")");
       return sb.toString();
@@ -2881,6 +2974,14 @@ public class BlockWorkerClientService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 3: // FILE_SIZE
+              if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+                struct.fileSize = iprot.readI64();
+                struct.setFileSizeIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -2901,6 +3002,9 @@ public class BlockWorkerClientService {
         oprot.writeFieldEnd();
         oprot.writeFieldBegin(BLOCK_ID_FIELD_DESC);
         oprot.writeI64(struct.blockId);
+        oprot.writeFieldEnd();
+        oprot.writeFieldBegin(FILE_SIZE_FIELD_DESC);
+        oprot.writeI64(struct.fileSize);
         oprot.writeFieldEnd();
         oprot.writeFieldStop();
         oprot.writeStructEnd();
@@ -2926,19 +3030,25 @@ public class BlockWorkerClientService {
         if (struct.isSetBlockId()) {
           optionals.set(1);
         }
-        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetFileSize()) {
+          optionals.set(2);
+        }
+        oprot.writeBitSet(optionals, 3);
         if (struct.isSetSessionId()) {
           oprot.writeI64(struct.sessionId);
         }
         if (struct.isSetBlockId()) {
           oprot.writeI64(struct.blockId);
         }
+        if (struct.isSetFileSize()) {
+          oprot.writeI64(struct.fileSize);
+        }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, cacheBlock_args struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(2);
+        BitSet incoming = iprot.readBitSet(3);
         if (incoming.get(0)) {
           struct.sessionId = iprot.readI64();
           struct.setSessionIdIsSet(true);
@@ -2946,6 +3056,10 @@ public class BlockWorkerClientService {
         if (incoming.get(1)) {
           struct.blockId = iprot.readI64();
           struct.setBlockIdIsSet(true);
+        }
+        if (incoming.get(2)) {
+          struct.fileSize = iprot.readI64();
+          struct.setFileSizeIsSet(true);
         }
       }
     }

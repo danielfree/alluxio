@@ -63,10 +63,11 @@ public interface BlockWorkerClient extends Closeable {
    * Notifies the worker the block is cached.
    *
    * @param blockId the ID of the block
+   * @param fileSize the actual file size
    * @throws IOException if an I/O error occurs
    * @throws AlluxioException if an Alluxio error occurs
    */
-  void cacheBlock(final long blockId) throws IOException, AlluxioException;
+  void cacheBlock(final long blockId, final long fileSize) throws IOException, AlluxioException;
 
   /**
    * Notifies worker that the block has been cancelled.

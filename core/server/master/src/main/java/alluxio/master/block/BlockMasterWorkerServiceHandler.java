@@ -92,11 +92,11 @@ public final class BlockMasterWorkerServiceHandler implements BlockMasterWorkerS
 
   @Override
   public void commitBlock(final long workerId, final long usedBytesOnTier, final String tierAlias,
-      final long blockId, final long length) throws AlluxioTException {
+      final long blockId, final long length, final long fileSize) throws AlluxioTException {
     RpcUtils.call(LOG, new RpcUtils.RpcCallable<Void>() {
       @Override
       public Void call() throws AlluxioException {
-        mBlockMaster.commitBlock(workerId, usedBytesOnTier, tierAlias, blockId, length);
+        mBlockMaster.commitBlock(workerId, usedBytesOnTier, tierAlias, blockId, length, fileSize);
         return null;
       }
     });
