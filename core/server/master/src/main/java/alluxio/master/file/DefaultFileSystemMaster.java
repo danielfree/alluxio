@@ -864,9 +864,11 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
     // the blocks (except the last one) is the same size as the file block size.
     long inMemoryLength = 0;
     long fileBlockSize = fileInode.getBlockSizeBytes();
+    long fileSize = 0;
     for (int i = 0; i < blockInfoList.size(); i++) {
       BlockInfo blockInfo = blockInfoList.get(i);
       inMemoryLength += blockInfo.getLength();
+      fileSize += (blockInfo.getFileSize() > 0) ? blockInfo.getFileSize() : blockInfo.getLength();
       if (i < blockInfoList.size() - 1 && blockInfo.getLength() != fileBlockSize) {
         throw new BlockInfoException(
             "Block index " + i + " has a block size smaller than the file block size (" + fileInode
@@ -876,7 +878,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
 
     // If the file is persisted, its length is determined by UFS. Otherwise, its length is
     // determined by its memory footprint.
-    long length = fileInode.isPersisted() ? options.getUfsLength() : inMemoryLength;
+    long length = fileInode.isPersisted() ? options.getUfsLength() : fileSize;
 
     completeFileInternal(fileInode.getBlockIds(), inodePath, length, options.getOperationTimeMs());
     CompleteFileEntry completeFileEntry =

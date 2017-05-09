@@ -45,6 +45,7 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
   private static final org.apache.thrift.protocol.TField BLOCK_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("blockId", org.apache.thrift.protocol.TType.I64, (short)1);
   private static final org.apache.thrift.protocol.TField LENGTH_FIELD_DESC = new org.apache.thrift.protocol.TField("length", org.apache.thrift.protocol.TType.I64, (short)2);
   private static final org.apache.thrift.protocol.TField LOCATIONS_FIELD_DESC = new org.apache.thrift.protocol.TField("locations", org.apache.thrift.protocol.TType.LIST, (short)3);
+  private static final org.apache.thrift.protocol.TField FILE_SIZE_FIELD_DESC = new org.apache.thrift.protocol.TField("fileSize", org.apache.thrift.protocol.TType.I64, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -55,12 +56,14 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
   private long blockId; // required
   private long length; // required
   private List<BlockLocation> locations; // required
+  private long fileSize; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     BLOCK_ID((short)1, "blockId"),
     LENGTH((short)2, "length"),
-    LOCATIONS((short)3, "locations");
+    LOCATIONS((short)3, "locations"),
+    FILE_SIZE((short)4, "fileSize");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -81,6 +84,8 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
           return LENGTH;
         case 3: // LOCATIONS
           return LOCATIONS;
+        case 4: // FILE_SIZE
+          return FILE_SIZE;
         default:
           return null;
       }
@@ -123,6 +128,7 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
   // isset id assignments
   private static final int __BLOCKID_ISSET_ID = 0;
   private static final int __LENGTH_ISSET_ID = 1;
+  private static final int __FILESIZE_ISSET_ID = 2;
   private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
@@ -134,6 +140,8 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
     tmpMap.put(_Fields.LOCATIONS, new org.apache.thrift.meta_data.FieldMetaData("locations", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
             new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT            , "BlockLocation"))));
+    tmpMap.put(_Fields.FILE_SIZE, new org.apache.thrift.meta_data.FieldMetaData("fileSize", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(BlockInfo.class, metaDataMap);
   }
@@ -144,7 +152,8 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
   public BlockInfo(
     long blockId,
     long length,
-    List<BlockLocation> locations)
+    List<BlockLocation> locations,
+    long fileSize)
   {
     this();
     this.blockId = blockId;
@@ -152,6 +161,8 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
     this.length = length;
     setLengthIsSet(true);
     this.locations = locations;
+    this.fileSize = fileSize;
+    setFileSizeIsSet(true);
   }
 
   /**
@@ -168,6 +179,7 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
       }
       this.locations = __this__locations;
     }
+    this.fileSize = other.fileSize;
   }
 
   public BlockInfo deepCopy() {
@@ -181,6 +193,8 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
     setLengthIsSet(false);
     this.length = 0;
     this.locations = null;
+    setFileSizeIsSet(false);
+    this.fileSize = 0;
   }
 
   public long getBlockId() {
@@ -268,6 +282,29 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
     }
   }
 
+  public long getFileSize() {
+    return this.fileSize;
+  }
+
+  public BlockInfo setFileSize(long fileSize) {
+    this.fileSize = fileSize;
+    setFileSizeIsSet(true);
+    return this;
+  }
+
+  public void unsetFileSize() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __FILESIZE_ISSET_ID);
+  }
+
+  /** Returns true if field fileSize is set (has been assigned a value) and false otherwise */
+  public boolean isSetFileSize() {
+    return EncodingUtils.testBit(__isset_bitfield, __FILESIZE_ISSET_ID);
+  }
+
+  public void setFileSizeIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __FILESIZE_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case BLOCK_ID:
@@ -294,6 +331,14 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
       }
       break;
 
+    case FILE_SIZE:
+      if (value == null) {
+        unsetFileSize();
+      } else {
+        setFileSize((Long)value);
+      }
+      break;
+
     }
   }
 
@@ -307,6 +352,9 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
 
     case LOCATIONS:
       return getLocations();
+
+    case FILE_SIZE:
+      return getFileSize();
 
     }
     throw new IllegalStateException();
@@ -325,6 +373,8 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
       return isSetLength();
     case LOCATIONS:
       return isSetLocations();
+    case FILE_SIZE:
+      return isSetFileSize();
     }
     throw new IllegalStateException();
   }
@@ -369,6 +419,15 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
         return false;
     }
 
+    boolean this_present_fileSize = true;
+    boolean that_present_fileSize = true;
+    if (this_present_fileSize || that_present_fileSize) {
+      if (!(this_present_fileSize && that_present_fileSize))
+        return false;
+      if (this.fileSize != that.fileSize)
+        return false;
+    }
+
     return true;
   }
 
@@ -390,6 +449,11 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
     list.add(present_locations);
     if (present_locations)
       list.add(locations);
+
+    boolean present_fileSize = true;
+    list.add(present_fileSize);
+    if (present_fileSize)
+      list.add(fileSize);
 
     return list.hashCode();
   }
@@ -432,6 +496,16 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetFileSize()).compareTo(other.isSetFileSize());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetFileSize()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.fileSize, other.fileSize);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -466,6 +540,10 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
     } else {
       sb.append(this.locations);
     }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("fileSize:");
+    sb.append(this.fileSize);
     first = false;
     sb.append(")");
     return sb.toString();
@@ -547,6 +625,14 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 4: // FILE_SIZE
+            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+              struct.fileSize = iprot.readI64();
+              struct.setFileSizeIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -580,6 +666,9 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
         }
         oprot.writeFieldEnd();
       }
+      oprot.writeFieldBegin(FILE_SIZE_FIELD_DESC);
+      oprot.writeI64(struct.fileSize);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -607,7 +696,10 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
       if (struct.isSetLocations()) {
         optionals.set(2);
       }
-      oprot.writeBitSet(optionals, 3);
+      if (struct.isSetFileSize()) {
+        optionals.set(3);
+      }
+      oprot.writeBitSet(optionals, 4);
       if (struct.isSetBlockId()) {
         oprot.writeI64(struct.blockId);
       }
@@ -623,12 +715,15 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
           }
         }
       }
+      if (struct.isSetFileSize()) {
+        oprot.writeI64(struct.fileSize);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, BlockInfo struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(3);
+      BitSet incoming = iprot.readBitSet(4);
       if (incoming.get(0)) {
         struct.blockId = iprot.readI64();
         struct.setBlockIdIsSet(true);
@@ -650,6 +745,10 @@ public class BlockInfo implements org.apache.thrift.TBase<BlockInfo, BlockInfo._
           }
         }
         struct.setLocationsIsSet(true);
+      }
+      if (incoming.get(3)) {
+        struct.fileSize = iprot.readI64();
+        struct.setFileSizeIsSet(true);
       }
     }
   }

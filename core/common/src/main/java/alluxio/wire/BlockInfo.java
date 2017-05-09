@@ -32,6 +32,7 @@ public final class BlockInfo implements Serializable {
 
   private long mBlockId;
   private long mLength;
+  private long mFileSize;
   private ArrayList<BlockLocation> mLocations = new ArrayList<>();
 
   /**
@@ -47,6 +48,7 @@ public final class BlockInfo implements Serializable {
   protected BlockInfo(alluxio.thrift.BlockInfo blockInfo) {
     mBlockId = blockInfo.getBlockId();
     mLength = blockInfo.getLength();
+    mFileSize = blockInfo.getFileSize();
     mLocations = new ArrayList<>();
     for (alluxio.thrift.BlockLocation location : blockInfo.getLocations()) {
       mLocations.add(new BlockLocation(location));
@@ -65,6 +67,22 @@ public final class BlockInfo implements Serializable {
    */
   public long getLength() {
     return mLength;
+  }
+
+  /**
+   * @return the file size
+   */
+  public long getFileSize() {
+    return mFileSize;
+  }
+
+  /**
+   * @param fileSize the actual file size
+   * @return the block information
+   */
+  public BlockInfo setFileSize(long fileSize) {
+    mFileSize = fileSize;
+    return this;
   }
 
   /**
@@ -109,7 +127,7 @@ public final class BlockInfo implements Serializable {
     for (BlockLocation location : mLocations) {
       locations.add(location.toThrift());
     }
-    return new alluxio.thrift.BlockInfo(mBlockId, mLength, locations);
+    return new alluxio.thrift.BlockInfo(mBlockId, mLength, locations, mFileSize);
   }
 
   @Override
