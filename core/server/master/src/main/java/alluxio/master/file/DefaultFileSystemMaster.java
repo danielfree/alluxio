@@ -869,7 +869,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
       BlockInfo blockInfo = blockInfoList.get(i);
       inMemoryLength += blockInfo.getLength();
       fileSize += (blockInfo.getFileSize() > 0) ? blockInfo.getFileSize() : blockInfo.getLength();
-      if (i < blockInfoList.size() - 1 && blockInfo.getLength() != fileBlockSize) {
+      if (i < blockInfoList.size() - 1 && blockInfo.getFileSize() != fileBlockSize) {
         throw new BlockInfoException(
             "Block index " + i + " has a block size smaller than the file block size (" + fileInode
                 .getBlockSizeBytes() + ")");
@@ -1366,7 +1366,7 @@ public final class DefaultFileSystemMaster extends AbstractMaster implements Fil
     long inMemoryLength = 0;
     for (BlockInfo info : mBlockMaster.getBlockInfoList(inodeFile.getBlockIds())) {
       if (isInTopStorageTier(info)) {
-        inMemoryLength += info.getLength();
+        inMemoryLength += info.getFileSize();
       }
     }
     return (int) (inMemoryLength * 100 / length);
