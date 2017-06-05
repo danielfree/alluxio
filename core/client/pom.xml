@@ -22,18 +22,6 @@
   <name>Alluxio Core - Client</name>
   <description>Client of Alluxio core</description>
 
-  <repositories>
-    <repository>
-      <id>my-repo1</id>
-      <name>fz repo</name>
-      <url>http://repo.fezo.com.cn:8081/nexus/content/repositories/thirdparty</url>
-      <snapshots>
-        <enabled>false</enabled>
-        <updatePolicy>never</updatePolicy>
-        <checksumPolicy>fail</checksumPolicy>
-      </snapshots>
-    </repository>
-  </repositories>
   <properties>
     <!-- The following paths need to be defined here as well as in the parent pom so that mvn can -->
     <!-- run properly from sub-project directories -->
