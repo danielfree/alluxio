@@ -18,6 +18,7 @@ import alluxio.client.BoundedStream;
 import alluxio.client.Locatable;
 import alluxio.client.PositionedReadable;
 import alluxio.client.block.AlluxioBlockStore;
+import alluxio.client.block.BlockMasterClient;
 import alluxio.client.block.BlockWorkerClient;
 import alluxio.client.block.options.LockBlockOptions;
 import alluxio.client.file.FileSystemContext;
@@ -25,6 +26,7 @@ import alluxio.client.file.options.InStreamOptions;
 import alluxio.client.resource.LockBlockResource;
 import alluxio.exception.AlluxioException;
 import alluxio.proto.dataserver.Protocol;
+import alluxio.resource.CloseableResource;
 import alluxio.util.CommonUtils;
 import alluxio.util.network.NetworkAddressUtils;
 import alluxio.wire.BlockInfo;
@@ -91,9 +93,15 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
           .createLocalPacketInStream(lockBlockResource.getResult().getBlockPath(), blockId,
               blockSize));
       blockWorkerClient.accessBlock(blockId);
-      BlockInfo blockInfo = context.acquireBlockMasterClientResource().get().getBlockInfo(blockId);
-      return new BlockInStream(inStream, blockWorkerClient, blockInfo.getFileSize(), closer,
-          options);
+      long fileSize = 0;
+      try (CloseableResource<BlockMasterClient> blockMasterClient =
+          context.acquireBlockMasterClientResource()) {
+        BlockInfo blockInfo = blockMasterClient.get().getBlockInfo(blockId);
+        fileSize = blockInfo.getFileSize();
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+      return new BlockInStream(inStream, blockWorkerClient, fileSize, closer, options);
     } catch (AlluxioException | IOException e) {
       CommonUtils.closeQuietly(closer);
       throw CommonUtils.castToIOException(e);
@@ -126,9 +134,15 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
               lockBlockResource.getResult().getLockId(), blockWorkerClient.getSessionId(),
               blockSize, false, Protocol.RequestType.ALLUXIO_BLOCK));
       blockWorkerClient.accessBlock(blockId);
-      BlockInfo blockInfo = context.acquireBlockMasterClientResource().get().getBlockInfo(blockId);
-      return new BlockInStream(inStream, blockWorkerClient, blockInfo.getFileSize(), closer,
-          options);
+      long fileSize = 0;
+      try (CloseableResource<BlockMasterClient> blockMasterClient =
+          context.acquireBlockMasterClientResource()) {
+        BlockInfo blockInfo = blockMasterClient.get().getBlockInfo(blockId);
+        fileSize = blockInfo.getFileSize();
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+      return new BlockInStream(inStream, blockWorkerClient, fileSize, closer, options);
     } catch (AlluxioException | IOException e) {
       CommonUtils.closeQuietly(closer);
       throw CommonUtils.castToIOException(e);
@@ -192,9 +206,15 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
                 lockBlockResult.getLockId(), blockWorkerClient.getSessionId(), blockSize,
                 !options.getAlluxioStorageType().isStore(), Protocol.RequestType.UFS_BLOCK));
       }
-      BlockInfo blockInfo = context.acquireBlockMasterClientResource().get().getBlockInfo(blockId);
-      return new BlockInStream(inStream, blockWorkerClient, blockInfo.getFileSize(), closer,
-          options);
+      long fileSize = 0;
+      try (CloseableResource<BlockMasterClient> blockMasterClient =
+          context.acquireBlockMasterClientResource()) {
+        BlockInfo blockInfo = blockMasterClient.get().getBlockInfo(blockId);
+        fileSize = blockInfo.getFileSize();
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+      return new BlockInStream(inStream, blockWorkerClient, fileSize, closer, options);
     } catch (AlluxioException | IOException e) {
       CommonUtils.closeQuietly(closer);
       throw CommonUtils.castToIOException(e);
