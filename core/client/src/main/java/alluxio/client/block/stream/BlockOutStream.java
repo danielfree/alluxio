@@ -22,7 +22,7 @@ import alluxio.util.CommonUtils;
 import alluxio.wire.WorkerNetAddress;
 
 import com.google.common.io.Closer;
-import net.jpountz.lz4.LZ4CompatibleOutputStream;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
   private final Closer mCloser;
   private final BlockWorkerClient mBlockWorkerClient;
   private final PacketOutStream mOutStream;
-  private LZ4CompatibleOutputStream mLz4CompatibleOutputStream;
+  private LZ4FrameOutputStream mLz4FrameOutputStream;
   private boolean mClosed;
   private long mBytesWritten;
 
@@ -106,8 +106,8 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
 
   @Override
   public void write(byte[] b) throws IOException {
-    if (mLz4CompatibleOutputStream != null) {
-      mLz4CompatibleOutputStream.write(b);
+    if (mLz4FrameOutputStream != null) {
+      mLz4FrameOutputStream.write(b);
     } else {
       mOutStream.write(b);
     }
@@ -116,8 +116,8 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    if (mLz4CompatibleOutputStream != null) {
-      mLz4CompatibleOutputStream.write(b, off, len);
+    if (mLz4FrameOutputStream != null) {
+      mLz4FrameOutputStream.write(b, off, len);
     } else {
       mOutStream.write(b, off, len);
     }
@@ -131,7 +131,7 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
     /** deprecated
     // estimate uncompressed bytes we can write based on remaining block size
     long remainingBytes = mOutStream.remaining();
-    if (mLz4CompatibleOutputStream != null) {
+    if (mLz4FrameOutputStream != null) {
       if (remainingBytes < 64 * 1024) {
         return 0;
       }
@@ -189,8 +189,8 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
       return;
     }
     try {
-      if (mLz4CompatibleOutputStream != null) {
-        mLz4CompatibleOutputStream.close();
+      if (mLz4FrameOutputStream != null) {
+        mLz4FrameOutputStream.close();
       } else {
         mOutStream.close();
       }
@@ -227,12 +227,12 @@ public class BlockOutStream extends FilterOutputStream implements BoundedStream,
     mBlockWorkerClient = mCloser.register(blockWorkerClient);
     if (options.getUserCompression()) {
       try {
-        mLz4CompatibleOutputStream = new LZ4CompatibleOutputStream(mOutStream);
+        mLz4FrameOutputStream = new LZ4FrameOutputStream(mOutStream);
       } catch (IOException e) {
-        mLz4CompatibleOutputStream = null;
+        mLz4FrameOutputStream = null;
       }
     } else {
-      mLz4CompatibleOutputStream = null;
+      mLz4FrameOutputStream = null;
     }
     mClosed = false;
   }

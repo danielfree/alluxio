@@ -35,7 +35,7 @@ import alluxio.wire.WorkerNetAddress;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.Closer;
-import net.jpountz.lz4.LZ4CompatibleInputStream;
+import net.jpountz.lz4.LZ4FrameInputStream;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -66,7 +66,7 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
   private final boolean mLocal;
   private final PacketInStream mInputStream;
   private long mBytesRead;
-  private LZ4CompatibleInputStream mLZ4CompatibleInputStream;
+  private LZ4FrameInputStream mLZ4FrameInputStream;
 
   /**
    * Creates an instance of local {@link BlockInStream} that reads from local worker.
@@ -228,8 +228,8 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
 
   @Override
   public int read() throws IOException {
-    if (mLZ4CompatibleInputStream != null) {
-      int read = mLZ4CompatibleInputStream.read();
+    if (mLZ4FrameInputStream != null) {
+      int read = mLZ4FrameInputStream.read();
       if (read != -1) {
         mBytesRead += read;
       }
@@ -245,8 +245,8 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
 
   @Override
   public int read(byte[] b, int off, int len) throws IOException {
-    if (mLZ4CompatibleInputStream != null) {
-      int read = mLZ4CompatibleInputStream.read(b, off, len);
+    if (mLZ4FrameInputStream != null) {
+      int read = mLZ4FrameInputStream.read(b, off, len);
       if (read != -1) {
         mBytesRead += read;
       }
@@ -273,12 +273,12 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
 
   @Override
   public void seek(long pos) throws IOException {
-    if (mLZ4CompatibleInputStream != null) {
-      mLZ4CompatibleInputStream = new LZ4CompatibleInputStream(mInputStream);
-      long skipped = mLZ4CompatibleInputStream.skip(pos);
+    if (mLZ4FrameInputStream != null) {
+      mLZ4FrameInputStream = new LZ4FrameInputStream(mInputStream);
+      long skipped = mLZ4FrameInputStream.skip(pos);
       long remaining = pos - skipped;
       while (remaining > 0) {
-        skipped = mLZ4CompatibleInputStream.skip(remaining);
+        skipped = mLZ4FrameInputStream.skip(remaining);
         if (skipped == -1) {
           return;
         }
@@ -293,9 +293,9 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
 
   @Override
   public int positionedRead(long pos, byte[] b, int off, int len) throws IOException {
-    if (mLZ4CompatibleInputStream != null) {
+    if (mLZ4FrameInputStream != null) {
       seek(pos);
-      int read = mLZ4CompatibleInputStream.read(b, off, len);
+      int read = mLZ4FrameInputStream.read(b, off, len);
       if (read != -1) {
         mBytesRead += read;
       }
@@ -349,12 +349,12 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
         .equals(NetworkAddressUtils.getClientHostName());
     if (options.getUseCompression()) {
       try {
-        mLZ4CompatibleInputStream = new LZ4CompatibleInputStream(mInputStream);
+        mLZ4FrameInputStream = new LZ4FrameInputStream(mInputStream);
       } catch (IOException e) {
-        mLZ4CompatibleInputStream = null;
+        mLZ4FrameInputStream = null;
       }
     } else {
-      mLZ4CompatibleInputStream = null;
+      mLZ4FrameInputStream = null;
     }
   }
 }
