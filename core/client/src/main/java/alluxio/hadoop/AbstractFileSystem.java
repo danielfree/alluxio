@@ -276,7 +276,9 @@ abstract class AbstractFileSystem extends org.apache.hadoop.fs.FileSystem {
     List<BlockLocation> blockLocations = new ArrayList<>();
     for (FileBlockInfo fileBlockInfo : blocks) {
       long offset = fileBlockInfo.getOffset();
-      long end = offset + fileBlockInfo.getBlockInfo().getFileSize();
+      long fileSize = fileBlockInfo.getBlockInfo().getFileSize() > 0
+          ? fileBlockInfo.getBlockInfo().getFileSize() : fileBlockInfo.getBlockInfo().getLength();
+      long end = offset + fileSize;
       // Check if there is any overlapping between [start, start+len] and [offset, end]
       if (end >= start && offset <= start + len) {
         ArrayList<String> names = new ArrayList<>();
@@ -294,7 +296,7 @@ abstract class AbstractFileSystem extends org.apache.hadoop.fs.FileSystem {
           hosts.add(HostAndPort.fromString(location).getHostText());
         }
         blockLocations.add(new BlockLocation(CommonUtils.toStringArray(names),
-            CommonUtils.toStringArray(hosts), offset, fileBlockInfo.getBlockInfo().getLength()));
+            CommonUtils.toStringArray(hosts), offset, fileSize));
       }
     }
 

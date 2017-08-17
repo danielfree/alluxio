@@ -210,11 +210,11 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
       try (CloseableResource<BlockMasterClient> blockMasterClient =
           context.acquireBlockMasterClientResource()) {
         BlockInfo blockInfo = blockMasterClient.get().getBlockInfo(blockId);
-        fileSize = blockInfo.getFileSize();
+        fileSize = blockInfo.getFileSize() > 0 ? blockInfo.getFileSize() : blockInfo.getLength();
       } catch (Exception e) {
         throw new IOException(e);
       }
-      return new BlockInStream(inStream, blockWorkerClient, fileSize, closer, options);
+      return new BlockInStream(inStream, blockWorkerClient, fileSize, closer, false);
     } catch (AlluxioException | IOException e) {
       CommonUtils.closeQuietly(closer);
       throw CommonUtils.castToIOException(e);
@@ -348,6 +348,39 @@ public class BlockInStream extends FilterInputStream implements BoundedStream, S
     mLocal = blockWorkerClient.getDataServerAddress().getHostName()
         .equals(NetworkAddressUtils.getClientHostName());
     if (options.getUseCompression()) {
+      try {
+        mLZ4FrameInputStream = new LZ4FrameInputStream(mInputStream);
+      } catch (IOException e) {
+        mLZ4FrameInputStream = null;
+      }
+    } else {
+      mLZ4FrameInputStream = null;
+    }
+  }
+
+  /**
+   * Create a BlockInStream with option to use compression.
+   *
+   * @param inputStream
+   * @param blockWorkerClient
+   * @param fileSize
+   * @param closer
+   * @param useCompression
+   */
+  protected BlockInStream(PacketInStream inputStream, BlockWorkerClient blockWorkerClient,
+      long fileSize, Closer closer, boolean useCompression) {
+    super(inputStream);
+
+    mInputStream = inputStream;
+    mBlockWorkerClient = blockWorkerClient;
+    mFileSize = fileSize;
+    mBytesRead = 0;
+
+    mCloser = closer;
+    mCloser.register(mInputStream);
+    mLocal = blockWorkerClient.getDataServerAddress().getHostName()
+        .equals(NetworkAddressUtils.getClientHostName());
+    if (useCompression) {
       try {
         mLZ4FrameInputStream = new LZ4FrameInputStream(mInputStream);
       } catch (IOException e) {
